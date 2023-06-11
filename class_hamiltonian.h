@@ -22,6 +22,12 @@ using namespace std;
 
 #define DIM_HILBERT 2
 
+struct HamiltParameters {
+    bool pbc_flag;
+    int num_sites;
+    double g_field, h_field, t_field;
+};
+
 //--- Contents -----------------------------------------------------------------
 
 class hamiltonian {
@@ -35,7 +41,7 @@ public:
     vector<double> eigenvalues;
     vector<vector<complex<double>>> hamilt, eigenvectors;
 
-    hamiltonian(const int &LENGTH, const int &PBC_FLAG, const double &G_FIELD, const double &H_FIELD, const double &T_FIELD):
+    hamiltonian(const HamiltParameters& param):
         /* Class lattice constructor **********************************
 
         Inputs:
@@ -53,72 +59,76 @@ public:
         T_FIELD = amplitude of the transverse field
 
         *************************************************************/
-        tot_length_(LENGTH),
-        pbc_flag_(PBC_FLAG),
-        g_coupling(G_FIELD),
-        h_field(H_FIELD),
-        t_field(T_FIELD)
+        tot_length_(param.num_sites),
+        pbc_flag_(param.pbc_flag),
+        g_coupling(param.g_field),
+        h_field(param.h_field),
+        t_field(param.t_field)
     {// CONSTRUCTION BEGIN
-        int index;
-        complex<double> zero_compl(0.0, 0.0);
+        int index = 0;
+        complex<double> zero(0.0, 0.0);
 
         // Compute the number of states
         tot_states_ = pow(DIM_HILBERT, tot_length_);
 
         // Initialize eigen-stuff
         eigenvalues.resize(tot_states_);
-        eigenvectors.resize(tot_states_, vector<complex<double>>(tot_states_, zero_compl));
+        eigenvectors.resize(tot_states_, vector<complex<double>>(tot_states_, zero));
 
         // Build the computational basis
         basis.resize(tot_states_, vector<int>(tot_length_, 0.));
-        for (int i = 0; i < tot_states_; i++) {
-            index = i;
-            for (int j = 0; j < tot_length_; j++) {
-                basis[i][tot_length_ - j - 1 ] = index % 2;
+        for (int n = 0; n < tot_states_; n++) {
+            index = n;
+            for (int i = 0; i < tot_length_; i++) {
+                basis[n][tot_length_ - i - 1 ] = index % 2;
                 index = index / 2;
             }
         }
 
         // Build the Hamiltonian
-        hamilt.resize(tot_states_, vector<complex<double>>(tot_states_, zero_compl));
+        hamilt.resize(tot_states_, vector<complex<double>>(tot_states_, zero));
         // Sigma_z Sigma_z [coupling]
         for (int i = 0; i < tot_length_ - 1; i++) {
             for (int n = 0; n < tot_states_; n++) {
-                if (basis[n][i] == basis[n][i+1]) hamilt[n][n] += g_coupling;
-                if (basis[n][i] != basis[n][i+1]) hamilt[n][n] -= g_coupling;
+                if (basis[n][i] == basis[n][i+1]) hamilt[n][n] -= g_coupling;
+                if (basis[n][i] != basis[n][i+1]) hamilt[n][n] += g_coupling;
             }
         }
         // Sigma_z Sigma_z boundary conditions
         if (pbc_flag_) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis[n][tot_length_ - 1] == basis[n][0])
-                    hamilt[n][n] += g_coupling;
-                if (basis[n][tot_length_ - 1] != basis[n][0])
                     hamilt[n][n] -= g_coupling;
+                if (basis[n][tot_length_ - 1] != basis[n][0])
+                    hamilt[n][n] += g_coupling;
             }
         }
         // Sigma_z [longitudinal field]
         for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
-                if (basis[n][i] == 1) hamilt[n][n] += h_field;
-                if (basis[n][i] == 0) hamilt[n][n] -= h_field;
+                if (basis[n][i] == 1) hamilt[n][n] -= h_field;
+                if (basis[n][i] == 0) hamilt[n][n] += h_field;
             }
         }
         // Sigma_x [transverse field]
-        // for (int i = 0; i < tot_length_; i++) {
-        //     for (int n = 0; n < tot_states_; n++) {
-        //         if (basis[n][i] == 0) index = n + pow(2, i + 1);
-        //         if (basis[n][i] == 1) index = n - pow(2, i + 1);
-        //         hamilt[index][n] += t_field;
-        //     }
-        // }
+        for (int i = 0; i < tot_length_; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == 1) index = n - (1 << i);
+                if (basis[n][i] == 0) index = n + (1 << i);
+                if ((index >= 0) && (index < tot_states_)) {
+                    hamilt[index][n] += t_field;
+                } else {
+                    cout << index << endl;
+                }
+            }
+        }
 
     }// CONSTRUCTION END
 
     void show_comput_basis() {
         cout << "Total number of states: " << tot_states_ << endl;
         cout << "Lattice computational basis: " << endl;
-        for (auto state : basis) {
+        for (const auto& state : basis) {
             cout << "|";
             for (int i = 0; i < tot_length_; i++) cout << state[i];
             cout << ">  ";
@@ -150,8 +160,43 @@ public:
 
     void show_eigenvalues() {
         cout << "Eigenvalues" << endl;
-        for (auto val : eigenvalues) cout << val << " ";
+        for (const auto& val : eigenvalues) cout << val << " ";
         cout << endl << endl;
+    }
+
+    void show_eigen() {
+        /* Print eigenvalues and corresponding eigenvectors */
+
+        for (int i = 0; i < tot_states_; i++) {
+            cout << "Eigenvalue " << i << " -> " << get_eigenvalue(i) << endl;
+            for (const auto& element : eigenvectors[i]) {
+                cout << fixed << setprecision(2) << element << " ";
+            }
+            cout << endl;
+        }
+        cout << endl;
+    }
+
+    vector<complex<double>> get_eigenstate(int k){
+        /* After Diagonalization returns the k-th eigenvector */
+
+        if (k >= tot_states_) {
+            cout << "Index exceeds the amount of eigenvectors." << endl;
+            exit(1);
+        }
+
+        return eigenvectors[k];
+    }
+
+    double get_eigenvalue(int k){
+        /* After Diagonalization returns the k-th eigenvector */
+
+        if (k >= tot_states_) {
+            cout << "Index exceeds the amount of eigenvectors." << endl;
+            exit(1);
+        }
+
+        return eigenvalues[k];
     }
 
     void diagonalize(){
@@ -185,33 +230,85 @@ public:
         for (int i = 0; i < n; i++) {
             eigenvalues[i] = eigenval[i];
             for (int j = 0; j < lda; j++) {
-                eigenvectors[j][i] = lap_matr[j*lda + i];
+                eigenvectors[i][j] = lap_matr[j*lda + i];
             }
         }
     }
 
-    vector<complex<double>> get_GS(){
-        /* After Diagonalization returns the ground state eigenvector */
+    vector<complex<double>> compute_GS(){
+        /* Diagonalize and return the ground state eigenvector */
 
         vector<complex<double>> state(tot_states_);
 
+        diagonalize();
+
         cout << "The ground state energy is: " << eigenvalues[0] << endl;
         cout << "It is associated to the eigenstate:" << endl;
-        for (int i = 0; i < tot_states_; i++) {
-            cout << fixed << setprecision(2) << eigenvectors[i][0] << " ";
-            state.push_back(eigenvectors[i][0]);
+        for (int n = 0; n < tot_states_; n++) {
+            cout << fixed << setprecision(2) << eigenvectors[0][n] << " ";
+            state[n] = eigenvectors[0][n];
         }
-        cout << endl;
+        cout << endl << endl;
 
         return state;
     }
 
-    vector<complex<double>> action(vector<complex<double>> state_in){
+    vector<complex<double>> action(vector<complex<double>> psi_in){
         /* Action of the Hamiltonian on a given input state */
 
-        vector<complex<double>> state_out(tot_states_);
+        int index;
+        complex<double> zero(0.0, 0.0);
+        vector<complex<double>> psi_out(tot_states_, zero);
 
-        return state_out;
+        // Sigma_z Sigma_z [coupling]
+        for (int i = 0; i < tot_length_ - 1; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == basis[n][i + 1])
+                    psi_out[n] -= g_coupling * psi_in[n];
+                if (basis[n][i] != basis[n][i + 1])
+                    psi_out[n] += g_coupling * psi_in[n];
+            }
+        }
+        // Sigma_z Sigma_z boundary conditions
+        if (pbc_flag_) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][tot_length_ - 1] == basis[n][0])
+                    psi_out[n] -= g_coupling * psi_in[n];
+                if (basis[n][tot_length_ - 1] != basis[n][0])
+                    psi_out[n] += g_coupling * psi_in[n];
+          }
+        }
+        // Sigma_z [longitudinal field]
+        for (int i = 0; i < tot_length_; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == 1) psi_out[n] -= h_field * psi_in[n];
+                if (basis[n][i] == 0) psi_out[n] += h_field * psi_in[n];
+            }
+        }
+        // Sigma_x [transverse field]
+        for (int i = 0; i < tot_length_; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == 1) index = n - (1 << i);
+                if (basis[n][i] == 0) index = n + (1 << i);
+                psi_out[index] += t_field * psi_in[n];
+            }
+        }
+
+        return psi_out;
+    }
+
+    double average_energy(vector<complex<double>> psi_in){
+        /* Evaluation of the Hamiltonian on a given input state */
+
+        complex<double> energy = 0.;
+        vector<complex<double>> psi_out(tot_states_, complex<double>(0.0, 0.0));
+
+        psi_out = action(psi_in);
+        for(int n = 0; n < tot_states_; n++){
+            energy += conj(psi_in[n]) * psi_out[n];
+        }
+
+        return energy.real();
     }
 
     vector<complex<double>> evolution(vector<complex<double>> state_in, double t){
@@ -221,6 +318,7 @@ public:
 
         return state_out;
     }
+
 
 };
 
