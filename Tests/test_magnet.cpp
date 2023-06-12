@@ -10,8 +10,8 @@
 #include <chrono>
 #include <cmath>
 
-// Import the Class lattice
 #include "../class_hamiltonian.h"
+#include "../magnetization.h"
 
 using namespace std;
 
@@ -40,7 +40,7 @@ using namespace std;
 #define SPARSE_FLAG 0
 #define PBC_FLAG 1
 #define G_FIELD 0.
-#define H_FIELD 1.
+#define H_FIELD 0.
 #define T_FIELD 1.
 
 //--- Main Test ----------------------------------------------------------------
@@ -56,44 +56,26 @@ int main(){
     param.h_field = H_FIELD;
     param.t_field = T_FIELD;
 
+    vector<vector<double>> magZX;
     vector<complex<double>> state, ground;
     hamiltonian HamOp(param);
 
-    HamOp.show_comput_basis();
-
     HamOp.show_hamiltonian();
-
-    HamOp.set_g_field(-0.5);
-    HamOp.show_hamiltonian();
-
-    HamOp.set_h_field(1.5);
-
-    HamOp.show_hamiltonian();
-
-    // Testing and timing the diagonalization process
-    cout << "Start diagonalization..." << endl;
-    auto start = chrono::steady_clock::now();
-    HamOp.diagonalize();
-    auto end = chrono::steady_clock::now();
-
-    // Print elapsed time for diagonalization
-    chrono::duration<double> elapsed_seconds = end - start;
-    cout << "Elapsed time : " << elapsed_seconds.count() << "s" << endl << endl;
-
-    HamOp.show_eigenvalues();
-
-    HamOp.show_eigenvectors();
-
-    HamOp.show_eigen();
 
     ground = HamOp.compute_GS();
 
-    state = HamOp.action(ground);
-    cout << "The state |Psi> = H|GS> is :" << endl;
-    for (auto val: state) {
-        cout << fixed << setprecision(2) << val << " ";
+    magZX = magnetization(ground);
+
+    cout << "Average of sigma_Z " << endl;
+    for (int i = 0; i < param.num_sites; i++) {
+        cout << magZX[0][i] << " ";
     }
-    cout << endl << endl;
+    cout << endl;
+    cout << "Average of sigma_X " << endl;
+    for (int i = 0; i < param.num_sites; i++) {
+        cout << magZX[1][i] << " ";
+    }
+    cout << endl;
 
     // Let us prepare a superposition of the two lowest
     // energy state and evaluate the average energy
@@ -102,11 +84,19 @@ int main(){
     for (int i = 0; i < state.size(); i++){
         state[i] = (ground[i] + state[i]) / sqrt(2);
     }
-    cout << "The average energy of the state below is ";
-    cout << HamOp.average_energy(state) << endl;
-    for (auto val: state) {
-        cout << fixed << setprecision(2) << val << " ";
+
+    magZX = magnetization(state);
+
+    cout << "Average of sigma_Z " << endl;
+    for (int i = 0; i < param.num_sites; i++) {
+        cout << magZX[0][i] << " ";
     }
-    cout << endl << endl;
+    cout << endl;
+    cout << "Average of sigma_X " << endl;
+    for (int i = 0; i < param.num_sites; i++) {
+        cout << magZX[1][i] << " ";
+    }
+    cout << endl;
+
 
 }

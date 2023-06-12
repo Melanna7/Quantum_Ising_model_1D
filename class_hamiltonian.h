@@ -53,25 +53,24 @@ class hamiltonian {
 
     *************************************************************/
 private:
-    int sparse_flag_, pbc_flag_;
+    int spr_flag_, pbc_flag_;
     int tot_length_, tot_states_;
     double g_field, h_field, t_field;
 
 public:
+    vector<double> eigval;
     vector<vector<int>> basis;
-    vector<double> eigenvalues;
-    vector<vector<complex<double>>> hamilt, eigenvectors;
+    vector<vector<complex<double>>> hamilt, eigvec;
 
     hamiltonian(const HamiltParameters& param):
         tot_length_(param.num_sites),
-        sparse_flag_(param.sparse_flag),
+        spr_flag_(param.sparse_flag),
         pbc_flag_(param.pbc_flag),
         g_field(param.g_field),
         h_field(param.h_field),
         t_field(param.t_field)
     {// CONSTRUCTION BEGIN
         int index = 0;
-        complex<double> zero(0.0, 0.0);
 
         // Compute the number of states
         tot_states_ = pow(DIM_HILBERT, tot_length_);
@@ -86,14 +85,15 @@ public:
             }
         }
 
-        if (sparse_flag_) {
+        if (spr_flag_) {
             // Initialize partial eigen-stuff
-            eigenvalues.resize(sparse_flag_);
-            eigenvectors.resize(sparse_flag_, vector<complex<double>>(tot_states_, zero));
+            eigval.resize(spr_flag_);
+            eigvec.resize(spr_flag_, vector<complex<double>>(tot_states_, 0.));
         } else {
             // Initialize complete eigen-stuff
-            eigenvalues.resize(tot_states_);
-            eigenvectors.resize(tot_states_, vector<complex<double>>(tot_states_, zero));
+            eigval.resize(tot_states_);
+            eigvec.resize(tot_states_, vector<complex<double>>(tot_states_, 0.));
+            hamilt.resize(tot_states_, vector<complex<double>>(tot_states_, 0.));
             // Build the Hamiltonian
             buildHamilt();
         }
@@ -104,10 +104,10 @@ public:
         /* Subroutine to build the Hamiltonian */
 
         int index = 0;
-        complex<double> zero(0.0, 0.0);
-
-        // Build the Hamiltonian
-        hamilt.resize(tot_states_, vector<complex<double>>(tot_states_, zero));
+        // Initialize Hamiltonian
+        for (int i = 0; i < tot_states_; i++)
+            for (int j = 0; j < tot_states_; j++)
+                hamilt[i][j] = 0.;
         // Sigma_z Sigma_z [coupling]
         for (int i = 0; i < tot_length_ - 1; i++) {
             for (int n = 0; n < tot_states_; n++) {
@@ -134,8 +134,8 @@ public:
         // Sigma_x [transverse field]
         for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
-                if (basis[n][i] == 1) index = n - pow(2, tot_length_ - 1 -i);
-                if (basis[n][i] == 0) index = n + pow(2, tot_length_ - 1 -i);
+                if (basis[n][i] == 1) index = n - pow(2, tot_length_ - 1 - i);
+                if (basis[n][i] == 0) index = n + pow(2, tot_length_ - 1 - i);
                 hamilt[index][n] += t_field;
             }
         }
@@ -157,8 +157,7 @@ public:
         /* Action of the Hamiltonian on a given input state */
 
         int index;
-        complex<double> zero(0.0, 0.0);
-        vector<complex<double>> psi_out(tot_states_, zero);
+        vector<complex<double>> psi_out(tot_states_, 0.);
 
         // Sigma_z Sigma_z [coupling]
         for (int i = 0; i < tot_length_ - 1; i++) {
@@ -188,8 +187,8 @@ public:
         // Sigma_x [transverse field]
         for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
-                if (basis[n][i] == 1) index = n - pow(2, tot_length_ - 1 -i);
-                if (basis[n][i] == 0) index = n + pow(2, tot_length_ - 1 -i);
+                if (basis[n][i] == 1) index = n - pow(2, tot_length_ - 1 - i);
+                if (basis[n][i] == 0) index = n + pow(2, tot_length_ - 1 - i);
                 psi_out[index] += t_field * psi_in[n];
             }
         }
@@ -201,7 +200,7 @@ public:
         /* Hamiltonian evolution U(t) of a given input state */
 
         vector<complex<double>> state_out(tot_states_);
-
+        cout << "Unitary evolution not implemented yet!" << endl << endl;
         return state_out;
     }
 
@@ -209,7 +208,7 @@ public:
         /* Rebuild the Hamiltonian changing the value of g_field */
 
         g_field = g;
-        if (!sparse_flag_) buildHamilt();
+        if (!spr_flag_) buildHamilt();
         cout << "Coupling g setted to " << g << endl << endl;
 
     }
@@ -218,16 +217,15 @@ public:
         /* Rebuild the Hamiltonian changing the value of h_field */
 
         h_field = h;
-        if (!sparse_flag_) buildHamilt();
+        if (!spr_flag_) buildHamilt();
         cout << "Coupling h setted to " << h << endl << endl;
-
     }
 
     void set_t_field(double t) {
         /* Rebuild the Hamiltonian changing the value of g_field */
 
         t_field = t;
-        if (!sparse_flag_) buildHamilt();
+        if (!spr_flag_) buildHamilt();
         cout << "Coupling t setted to " << t << endl << endl;
 
     }
@@ -240,7 +238,7 @@ public:
             exit(1);
         }
 
-        return eigenvectors[k];
+        return eigvec[k];
     }
 
     double get_eigenvalue(int k){
@@ -251,19 +249,21 @@ public:
             exit(1);
         }
 
-        return eigenvalues[k];
+        return eigval[k];
     }
 
     void diagonalize(){
         /* Diagonalization subroutine with LAPACK */
 
         lapack_int n, lda, info;
-        double val_1, val_2;
         double *eigenval;
         lapack_complex_double *lap_matr;
 
-        if (!sparse_flag_) {
+        if (!spr_flag_) {
             // Complete diagonalization with LAPACK
+
+            double val_1, val_2;
+            lapack_complex_double val_c;
 
             n = tot_states_;
             lda = n;
@@ -276,7 +276,8 @@ public:
                 for (int j = 0; j < n; j++) {
                     val_1 = hamilt[i][j].real();
                     val_2 = hamilt[i][j].imag();
-                    lap_matr[i*lda + j] = lapack_make_complex_double(val_1, val_2);
+                    val_c = lapack_make_complex_double(val_1, val_2);
+                    lap_matr[i*lda + j] = val_c;
                 }
             }
 
@@ -285,7 +286,7 @@ public:
         } else {
             // Partial diagonalization with Jacobi-Davidson method
 
-            n = sparse_flag_;
+            n = spr_flag_;
             lda = tot_states_;
             eigenval = new double[n];
             lap_matr = new lapack_complex_double[n*lda];
@@ -300,7 +301,8 @@ public:
 
             // Davidson
             info = 0;
-
+            cout << "Davidson not implemented yet. everything set to zero";
+            cout << "Sorry" << endl;
         }
 
         // Check for convergence
@@ -311,9 +313,9 @@ public:
 
         // Update eigenvalues and eigenvectors
         for (int i = 0; i < n; i++) {
-            eigenvalues[i] = eigenval[i];
+            eigval[i] = eigenval[i];
             for (int j = 0; j < lda; j++) {
-                eigenvectors[i][j] = lap_matr[j*lda + i];
+                eigvec[i][j] = lap_matr[j*lda + i];
             }
         }
 
@@ -328,11 +330,11 @@ public:
 
         diagonalize();
 
-        cout << "The ground state energy is: " << eigenvalues[0] << endl;
+        cout << "The ground state energy is: " << eigval[0] << endl;
         cout << "It is associated to the eigenstate:" << endl;
         for (int n = 0; n < tot_states_; n++) {
-            cout << fixed << setprecision(2) << eigenvectors[0][n] << " ";
-            state[n] = eigenvectors[0][n];
+            cout << fixed << setprecision(2) << eigvec[0][n] << " ";
+            state[n] = eigvec[0][n];
         }
         cout << endl << endl;
 
@@ -367,7 +369,7 @@ public:
     void show_hamiltonian() {
         /* Print the Hamiltonian matrix */
 
-        if (sparse_flag_) {
+        if (spr_flag_) {
             cout << "Not allowed to print sparse Hamiltonian!" << endl << endl;
         } else {
             cout << "Hamiltonian" << endl;
@@ -385,7 +387,7 @@ public:
         /* Print stored eigenvectors */
 
         cout << "Eigenvectors" << endl;
-        for (const auto& row : eigenvectors) {
+        for (const auto& row : eigvec) {
             for (const auto& element : row) {
                 cout << fixed << setprecision(2) << element << " ";
             }
@@ -398,16 +400,16 @@ public:
         /* Print stored eigenvalues */
 
         cout << "Eigenvalues" << endl;
-        for (const auto& val : eigenvalues) cout << val << " ";
+        for (const auto& val : eigval) cout << val << " ";
         cout << endl << endl;
     }
 
     void show_eigen() {
         /* Print stored eigenvalues and corresponding eigenvectors */
 
-        for (int i = 0; i < eigenvalues.size(); i++) {
+        for (int i = 0; i < eigval.size(); i++) {
             cout << "Eigenvalue " << i << " -> " << get_eigenvalue(i) << endl;
-            for (const auto& element : eigenvectors[i]) {
+            for (const auto& element : eigvec[i]) {
                 cout << fixed << setprecision(2) << element << " ";
             }
             cout << endl;

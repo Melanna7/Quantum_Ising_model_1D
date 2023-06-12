@@ -38,33 +38,38 @@ extern void set_matrix(lint n, ldcmplex* a, lint lda, double2_t *a2);
 
 //Auxiliary routine: printing a matrix
 void print_matrix( char* desc, lint m, lint n, ldcmplex* a, lint lda ) {
-        lint i, j;
-        printf( "\n %s\n", desc );
-        for( i = 0; i < m; i++ ) {
-                for( j = 0; j < n; j++ )
-                        printf( " (%6.2f,%6.2f)", creal(a[i*lda+j]), cimag(a[i*lda+j]) );
-                printf( "\n" );
+    lint i, j;
+    printf( "\n %s\n", desc);
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++){
+            printf( " (%6.2f,%6.2f)", creal(a[i*lda+j]), cimag(a[i*lda+j]));
         }
+        printf( "\n" );
+    }
+
 }
 
 //Auxiliary routine: printing a real matrix
 void print_rmatrix( char* desc, lint m, lint n, double* a, lint lda ) {
-        lint i, j;
-        printf( "\n %s\n", desc );
-        for( i = 0; i < m; i++ ) {
-                for( j = 0; j < n; j++ ) printf( " %6.2f", a[i*lda+j] );
-                printf( "\n" );
-        }
+    lint i, j;
+    printf( "\n %s\n", desc);
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) printf( " %6.2f", a[i*lda+j] );
+        printf( "\n" );
+    }
 }
 
 //Auxiliary routine: set a complex matrix from a double[2] type matrix
 void set_matrix(lint n, lapack_complex_double* a, lint lda, double2_t *a2) {
-        lapack_int i, j;
-
-        for( i = 0; i < n; i++ ) {
-                for( j = 0; j < n; j++ )
-                        a[i*lda+j] = lapack_make_complex_double(a2[i*lda+j].v[0], a2[i*lda+j].v[1]);
+    lapack_int i, j;
+    double val_1, val_2;
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            val_1 = a2[i*lda+j].v[0];
+            val_2 = a2[i*lda+j].v[1];
+            a[i*lda+j] = lapack_make_complex_double(val_1, val_2);
         }
+    }
 }
 
 //--- Main ---------------------------------------------------------------------
