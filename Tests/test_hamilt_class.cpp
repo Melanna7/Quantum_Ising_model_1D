@@ -20,9 +20,9 @@ using namespace std;
 *
 * SIDE = size of the lattice's side.
 *
-* EIG_FLAG = flag for the diagonalization procedure.
-*            0 for complete LAPACK diagonalization.
-*            else for Lancsoz method.................
+* SPARSE_FLAG = condition on storing or not the Hamiltonian.
+*               0 build the Hamiltonian and LAPACK diagonalization.
+*               else number of desired eigenvalues with Lancsoz method.
 *
 * PBC_FLAG = flag for the boundary conditions.
 *            0 for open boundary conditions.
@@ -37,7 +37,7 @@ using namespace std;
 *******************************************************************************/
 
 #define SIDE 3      // Max 8 for LAPACK complete diagonalization
-#define EIG_FLAG 0
+#define SPARSE_FLAG 0
 #define PBC_FLAG 1
 #define G_FIELD 0.
 #define H_FIELD 0.
@@ -49,6 +49,7 @@ int main(){
     /* Test the methods of the hamiltonian Class. */
 
     HamiltParameters param;
+    param.sparse_flag = SPARSE_FLAG;
     param.pbc_flag = PBC_FLAG;
     param.num_sites = SIDE;
     param.g_field = G_FIELD;
@@ -59,6 +60,12 @@ int main(){
     hamiltonian HamOp(param);
 
     HamOp.show_comput_basis();
+
+    HamOp.show_hamiltonian();
+
+    HamOp.set_g_field(-1.);
+
+    HamOp.set_h_field(1.);
 
     HamOp.show_hamiltonian();
 
@@ -89,8 +96,8 @@ int main(){
 
     // Let us prepare a superposition of the two lowest
     // energy state and evaluate the average energy
-    ground = HamOp.eigenvectors[0]; //get_eigenstate(0);
-    state = HamOp.get_eigenstate(7);
+    ground = HamOp.get_eigenstate(0);
+    state = HamOp.get_eigenstate(2);
     for (int i = 0; i < state.size(); i++){
         state[i] = (ground[i] + state[i]) / sqrt(2);
     }
