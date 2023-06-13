@@ -11,7 +11,7 @@
 #include <cmath>
 
 #include "../class_hamiltonian.h"
-#include "../magnetization.h"
+#include "magnetization.h"
 
 using namespace std;
 
@@ -39,9 +39,9 @@ using namespace std;
 #define SIDE 2         // Max 8 for LAPACK complete diagonalization
 #define SPARSE_FLAG 0
 #define PBC_FLAG 1
-#define G_FIELD 0.
-#define H_FIELD 0.
-#define T_FIELD 1.
+#define GZ_FIELD -1.
+#define HZ_FIELD 0.
+#define HX_FIELD 1.5
 
 //--- Main Test ----------------------------------------------------------------
 
@@ -52,11 +52,11 @@ int main(){
     param.sparse_flag = SPARSE_FLAG;
     param.pbc_flag = PBC_FLAG;
     param.num_sites = SIDE;
-    param.g_field = G_FIELD;
-    param.h_field = H_FIELD;
-    param.t_field = T_FIELD;
+    param.gz_field = GZ_FIELD;
+    param.hz_field = HZ_FIELD;
+    param.hx_field = HX_FIELD;
 
-    vector<vector<double>> magZX;
+    vector<double> magZZX;
     vector<complex<double>> state, ground;
     hamiltonian HamOp(param);
 
@@ -64,18 +64,12 @@ int main(){
 
     ground = HamOp.compute_GS();
 
-    magZX = magnetization(ground);
+    magZZX = magnetization(ground);
 
     cout << "Average of sigma_Z " << endl;
-    for (int i = 0; i < param.num_sites; i++) {
-        cout << magZX[0][i] << " ";
-    }
-    cout << endl;
+    cout << magZZX[1] << endl;
     cout << "Average of sigma_X " << endl;
-    for (int i = 0; i < param.num_sites; i++) {
-        cout << magZX[1][i] << " ";
-    }
-    cout << endl;
+    cout << magZZX[2] << endl;
 
     // Let us prepare a superposition of the two lowest
     // energy state and evaluate the average energy
@@ -85,18 +79,11 @@ int main(){
         state[i] = (ground[i] + state[i]) / sqrt(2);
     }
 
-    magZX = magnetization(state);
+    magZZX = magnetization(state);
 
     cout << "Average of sigma_Z " << endl;
-    for (int i = 0; i < param.num_sites; i++) {
-        cout << magZX[0][i] << " ";
-    }
-    cout << endl;
+    cout << magZZX[1] << endl;
     cout << "Average of sigma_X " << endl;
-    for (int i = 0; i < param.num_sites; i++) {
-        cout << magZX[1][i] << " ";
-    }
-    cout << endl;
-
+    cout << magZZX[2] << endl;
 
 }

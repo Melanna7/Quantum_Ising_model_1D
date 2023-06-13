@@ -36,12 +36,12 @@ using namespace std;
 *
 *******************************************************************************/
 
-#define SIDE 2         // Max 8 for LAPACK complete diagonalization
+#define SIDE 3         // Max 8 for LAPACK complete diagonalization
 #define SPARSE_FLAG 0
-#define PBC_FLAG 1
-#define G_FIELD 0.
-#define H_FIELD 1.
-#define T_FIELD 1.
+#define PBC_FLAG 0
+#define GZ_FIELD -1.
+#define HZ_FIELD 0.
+#define HX_FIELD 1.
 
 //--- Main Test ----------------------------------------------------------------
 
@@ -52,9 +52,9 @@ int main(){
     param.sparse_flag = SPARSE_FLAG;
     param.pbc_flag = PBC_FLAG;
     param.num_sites = SIDE;
-    param.g_field = G_FIELD;
-    param.h_field = H_FIELD;
-    param.t_field = T_FIELD;
+    param.gz_field = GZ_FIELD;
+    param.hz_field = HZ_FIELD;
+    param.hx_field = HX_FIELD;
 
     vector<complex<double>> state, ground;
     hamiltonian HamOp(param);
@@ -63,12 +63,14 @@ int main(){
 
     HamOp.show_hamiltonian();
 
-    HamOp.set_g_field(-0.5);
-    HamOp.show_hamiltonian();
-
-    HamOp.set_h_field(1.5);
-
-    HamOp.show_hamiltonian();
+    // HamOp.set_gz_field(-1.);
+    // HamOp.show_hamiltonian();
+    //
+    // HamOp.set_hz_field(0.);
+    // HamOp.show_hamiltonian();
+    //
+    // HamOp.set_hx_field(-1.);
+    // HamOp.show_hamiltonian();
 
     // Testing and timing the diagonalization process
     cout << "Start diagonalization..." << endl;
@@ -80,10 +82,8 @@ int main(){
     chrono::duration<double> elapsed_seconds = end - start;
     cout << "Elapsed time : " << elapsed_seconds.count() << "s" << endl << endl;
 
-    HamOp.show_eigenvalues();
-
-    HamOp.show_eigenvectors();
-
+    // HamOp.show_eigenvalues();
+    // HamOp.show_eigenvectors();
     HamOp.show_eigen();
 
     ground = HamOp.compute_GS();

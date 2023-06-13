@@ -17,6 +17,7 @@
 #include <cmath>
 
 #include <lapacke.h>
+#include <dsaupd.h>
 
 using namespace std;
 
@@ -320,7 +321,96 @@ public:
             //------------------------------------------------------------------
         } else {
             // Partial diagonalization with ARPACK++
+            // https://gist.github.com/wpoely86/043d0eb92f7e42563e7f -----------
 
+            int info = 0;
+            int n = tot_states_; // dimension of the matrix
+            int nev = spr_flag_; // number of eigenvalues to calculate
+            int ido = 0; // reverse communication param, zero on first iter
+            char bmat = 'I'; // standard eigenvalue problem A*x=lambda*x
+            char which[] = {'S','A'}; // smallest algebraic eigenvalue
+            double tol = 0; // calculate until machine precision
+            // array used for reverse communication
+            double *workd = new double[3*n];
+            for(int i=0;i<3*n;i++) workd[i] = 0;
+            // the residual vector
+            double *resid = new double[n];
+            // lanczos vectors generated at each iteration
+            int ncv = 42;
+            if (n < ncv) ncv = n;
+            double *v = new double[n*ncv];
+            // length of the workl array
+            int lworkl = ncv*(ncv+8);
+            double *workl = new double[lworkl];
+            // parameters for mode of dsaupd
+            int *iparam = new int[11];
+            /* Sets the mode of dsaupd.   *
+            *  1 is exact shifting,       *
+            *  2 is user-supplied shifts, *
+            *  3 is shift-invert mode,    *
+            *  4 is buckling mode,        *
+            *  5 is Cayley mode.          */
+            iparam[6] = 1;
+            iparam[0] = 1;   // specifies the shift strategy (1->exact)
+            iparam[2] = 3*n; // maximum number of iterations
+            // other parameters
+            int *ipntr = new int[11];
+            /* Indicates the locations in the work array *
+            *  workd where the input and output vectors  *
+            *  in thecallback routine are located.       */
+            double sigma; // not used if iparam[6] == 1
+
+            // This vector will return the eigenvalues from dseupd
+            double *d = new double[nev];
+            // rvec == 0 : calculate only eigenvalue
+            // rvec > 0 : calculate eigenvalue and eigenvector
+            int rvec = 1;
+            double *z = 0;
+            // This vector will return the eigenvectors from dseupd
+            if (rvec) z = new double[n*nev];
+            char howmny = 'A'; // 'A' => nev eigenvectors
+            int *select; // if howmny == 'A', workspace to reorder eigenvec
+            if (howmny == 'A') select = new int[ncv];
+
+            // Solve eigenproblem: first iteration
+            dsaupd_(&ido, &bmat, &n, &which[0], &nev, &tol, resid, &ncv, v, &n, iparam, ipntr, workd, workl, &lworkl, &info);
+            // Solve eigenproblem: loop...
+            while (ido != 99) {
+                // matrix-vector multiplication
+                mvprod(workd+ipntr[0]-1, workd+ipntr[1]-1,0);
+                // following iterations
+                dsaupd_(&ido, &bmat, &n, &which[0], &nev, &tol, resid, &ncv, v, &n, iparam, ipntr, workd, workl, &lworkl, &info);
+            }
+            // Check for errors in the loop
+            if (info < 0)
+                cerr << "Error with dsaupd, info = " << info << endl;
+            else if (info == 1)
+                cerr << "Maximum number of Lanczos iterations reached." << endl;
+            else if (info == 3)
+                cerr << "No shifts could be applied during implicit Arnoldi update, try increasing NCV." << endl;
+
+            // Solve eigenproblem: last step
+            dseupd_(&rvec, &howmny, select, d, z, &n, &sigma, &bmat, &n, which, &nev, &tol, resid, &ncv, v, &n, iparam, ipntr, workd, workl, &lworkl, &info);
+            // Check for convergence
+            if ( info != 0 ) cerr << "Error with dseupd, info = " << info << endl;
+            // Update eigenvalues and eigenvectors
+            for (int i = 0; i < nev; i++) {
+                eigval[i] = d[i];
+                for (int j = 0; j < n; j++) {
+                    eigvec[i][j] = z[i*n + j];
+                }
+            }
+
+            // Remember to free up memory
+            delete [] resid;
+            delete [] v;
+            delete [] iparam;
+            delete [] ipntr;
+            delete [] workd;
+            delete [] workl;
+            delete [] d;
+            if (rvec) delete [] z;
+            if (howmny == 'A') delete [] select;
             //------------------------------------------------------------------
         }
 
