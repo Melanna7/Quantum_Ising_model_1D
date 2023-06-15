@@ -36,12 +36,12 @@ using namespace std;
 *
 *******************************************************************************/
 
-#define SIDE 3         // Max 8 for LAPACK complete diagonalization
-#define SPARSE_FLAG 0
+#define SIDE 3
+#define SPARSE_FLAG 3
 #define PBC_FLAG 0
 #define GZ_FIELD -1.
 #define HZ_FIELD 0.
-#define HX_FIELD 1.
+#define HX_FIELD -1.
 
 //--- Main Test ----------------------------------------------------------------
 
@@ -63,14 +63,9 @@ int main(){
 
     HamOp.show_hamiltonian();
 
-    // HamOp.set_gz_field(-1.);
-    // HamOp.show_hamiltonian();
-    //
-    // HamOp.set_hz_field(0.);
-    // HamOp.show_hamiltonian();
-    //
-    // HamOp.set_hx_field(-1.);
-    // HamOp.show_hamiltonian();
+    param.gz_field = 0.;
+    HamOp.set_fields(param);
+    HamOp.show_hamiltonian();
 
     // Testing and timing the diagonalization process
     cout << "Start diagonalization..." << endl;

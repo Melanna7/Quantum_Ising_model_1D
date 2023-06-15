@@ -54,11 +54,15 @@ def alpha_hx(data):
     values_gp = {}
 
     # load points
-    for side in sides:
-        x, _, y, _, _, _, _ = data[side]
-        index_nearest = min(range(len(x)), key=lambda i: abs(x[i] - 1))
-        values_gp[side] = y[0:index_nearest]
+    x, _, _, _, _, _, _, _ = data[4]
+    index_nearest = min(range(len(x)), key=lambda i: abs(x[i] - 1))
     x = x[0:index_nearest]
+
+    print(index_nearest)
+
+    for side in sides:
+        _, _, y, _, _, _, _, _ = data[side]
+        values_gp[side] = y[0:index_nearest]
 
     # fit alpha
     for idx in range(index_nearest):
@@ -68,7 +72,7 @@ def alpha_hx(data):
         std_deviation = np.sqrt(np.diag(covariance))
         fit_db = std_deviation[1]
         # print and store
-        print(f"\nFit parameter for side {side} is: ")
+        print(f"\nFit parameter for side {side} and {x[idx]} is: ")
         print(f"{fit_b} ± {fit_db}\n")
         alpha.append(fit_b)
         alp_e.append(fit_db)
@@ -85,7 +89,6 @@ def alpha_hx(data):
     # points and function
     plt.errorbar(x, alpha, yerr=alp_e, fmt='.')
     # save and show
-    plt.legend(loc='upper right')
     plt.savefig(os.path.join("Plots_and_fit", title + ".png"))
     plt.show()
 
@@ -104,7 +107,7 @@ def plot_energy_gs(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, y, _, _, _, _, _ = data[side]
+        x, y, _, _, _, _, _, _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='lower left')
@@ -124,7 +127,7 @@ def plot_energy_gap1(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, y, _, _, _, _ = data[side]
+        x, _, y, _, _, _, _, _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='upper left')
@@ -144,7 +147,7 @@ def plot_energy_gap2(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, _, y, _, _, _ = data[side]
+        x, _, _, y, _, _, _, _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='lower right')
@@ -164,7 +167,7 @@ def plot_magnetization_z(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, _, _, y, _, _ = data[side]
+        x, _, _, _, y, _, _, _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='upper right')
@@ -184,7 +187,7 @@ def plot_magnetization_x(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, _, _, _, _, y = data[side]
+        x, _, _, _, _, _, y, _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='lower right')
@@ -204,7 +207,7 @@ def plot_mag_scaling(data):
     plt.xlabel('$ (hx - 1) * side  $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, _, _, y, _, _ = data[side]
+        x, _, _, _, y, _, _, _ = data[side]
         y = y * np.power(side, (1/8))
         x = (x - 1) * side
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
@@ -213,6 +216,29 @@ def plot_mag_scaling(data):
     plt.savefig(os.path.join("Plots_and_fit", title + ".png"))
     plt.show()
 
+def plot_chi_scaling(data):
+    """ Plot magnetization scaling """
+
+    title = "Plot scaling magnetization"
+    print(title + "\n")
+    # axis and style
+    fig = plt.figure(title)
+    plt.style.use('seaborn-whitegrid')
+    plt.title(title)
+    plt.ylabel(r'$ \chi * side^{-7/4} $')
+    plt.xlabel('$ (hx - 1) * side  $')
+    plt.xlim(-0.6, 1.5)
+    plt.ylim(0.4, 2.3)
+    # load and plot data in function of hx
+    for side in sides:
+        x, _, _, _, _, _, _, y = data[side]
+        y = y * np.power(side, -(7/4))
+        x = (x - 1) * side
+        plt.errorbar(x, y, fmt='.', label=f'side = {side}')
+    # save and show
+    plt.legend(loc='upper right')
+    plt.savefig(os.path.join("Plots_and_fit", title + ".png"))
+    plt.show()
 
 #-------------------------------------------------------------------------------
 
@@ -228,5 +254,6 @@ if __name__ == '__main__':
     plot_energy_gap2(data)
 
     plot_mag_scaling(data)
+    plot_chi_scaling(data)
 
     alpha_hx(data)

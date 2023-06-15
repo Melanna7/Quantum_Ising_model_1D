@@ -197,20 +197,6 @@ public:
         return psi_out;
     }
 
-    double average_energy(const vector<complex<double>>& psi_in){
-        /* Braket of the Hamiltonian on a given input state */
-
-        complex<double> energy = 0.;
-        vector<complex<double>> psi_out(tot_states_, complex<double>(0.0, 0.0));
-
-        psi_out = action(psi_in);
-        for(int n = 0; n < tot_states_; n++){
-            energy += conj(psi_in[n]) * psi_out[n];
-        }
-
-        return energy.real();
-    }
-
     vector<complex<double>> evolution(vector<complex<double>> state_in, double t){
         /* Hamiltonian evolution U(t) of a given input state */
 
@@ -219,28 +205,17 @@ public:
         return state_out;
     }
 
-    void set_gz_field(double gz) {
+    void set_fields(const HamiltParameters& param) {
         /* Rebuild the Hamiltonian changing the value of gz_field */
 
-        gz_field = gz;
+        gz_field = param.gz_field;
+        hz_field = param.hz_field;
+        hx_field = param.hx_field;
         if (!spr_flag_) buildHamilt();
-        cout << "Coupling g setted to " << gz << endl << endl;
-    }
-
-    void set_hz_field(double hz) {
-        /* Rebuild the Hamiltonian changing the value of hz_field */
-
-        hz_field = hz;
-        if (!spr_flag_) buildHamilt();
-        cout << "Coupling h setted to " << hz << endl << endl;
-    }
-
-    void set_hx_field(double hx) {
-        /* Rebuild the Hamiltonian changing the value of gz_field */
-
-        hx_field = hx;
-        if (!spr_flag_) buildHamilt();
-        cout << "Coupling t setted to " << hx << endl << endl;
+        cout << "Coupling setted to: "<< endl;
+        cout << "gz -> " << setprecision(4) << param.gz_field << endl;
+        cout << "hz -> " << setprecision(4) << param.hz_field << endl;
+        cout << "hx -> " << setprecision(4) << param.hx_field << endl << endl;
     }
 
     vector<complex<double>> get_eigenstate(int k){
@@ -277,6 +252,20 @@ public:
         cout << endl << endl;
 
         return state;
+    }
+
+    double average_energy(const vector<complex<double>>& psi_in){
+        /* Braket of the Hamiltonian on a given input state */
+
+        complex<double> energy = 0.;
+        vector<complex<double>> psi_out(tot_states_, complex<double>(0.0, 0.0));
+
+        psi_out = action(psi_in);
+        for(int n = 0; n < tot_states_; n++){
+            energy += conj(psi_in[n]) * psi_out[n];
+        }
+
+        return energy.real();
     }
 
     void diagonalize(){
