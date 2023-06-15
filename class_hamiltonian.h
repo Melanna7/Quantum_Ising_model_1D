@@ -279,8 +279,7 @@ public:
             lapack_int lda = n; // leading dimension of the matrix
             double eigenval[n]; // eigenvalues vector for zheev
             double val_1, val_2;
-            lapack_complex_double val_c;
-            lapack_complex_double lap_matr[lda*n]; // hamiltonian
+            lapack_complex_double matr[lda*n]; // hamiltonian
 
             // Cast the Hamiltonian into a LAPACK object
             for (int i = 0; i < n; i++) {
@@ -288,22 +287,21 @@ public:
                 for (int j = 0; j < n; j++) {
                     val_1 = hamilt[i][j].real();
                     val_2 = hamilt[i][j].imag();
-                    val_c = lapack_make_complex_double(val_1, val_2);
-                    lap_matr[i*lda + j] = val_c;
+                    matr[i*lda + j] = lapack_make_complex_double(val_1, val_2);
                 }
             }
             // Solve eigenproblem
             // https://www.netlib.org/lapack/explore-html/df/d9a/
             //group__complex16_h_eeigen_gaf23fb5b3ae38072ef4890ba
             //43d5cfea2.html#gaf23fb5b3ae38072ef4890ba43d5cfea2
-            info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'V', 'L', n, lap_matr, lda, eigenval);
+            info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'V', 'L', n, matr, lda, eigenval);
             // Check for convergence
             if (info > 0) cerr << "Algorithm zheev failed to compute eigenvalues." << endl;
             // Update eigenvalues and eigenvectors
             for (int i = 0; i < n; i++) {
                 eigval[i] = eigenval[i];
                 for (int j = 0; j < lda; j++) {
-                    eigvec[i][j] = lap_matr[j*lda + i];
+                    eigvec[i][j] = matr[j*lda + i];
                 }
             }
             //------------------------------------------------------------------

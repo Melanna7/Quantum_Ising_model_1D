@@ -11,7 +11,7 @@
 #include <cmath>
 
 // Import the Class lattice
-#include "../class_hamiltonian.h"
+#include "../class_hamiltonian_ARP.h"
 
 using namespace std;
 
@@ -37,7 +37,7 @@ using namespace std;
 *******************************************************************************/
 
 #define SIDE 3
-#define SPARSE_FLAG 0
+#define SPARSE_FLAG 3
 #define PBC_FLAG 0
 #define GZ_FIELD -1.
 #define HZ_FIELD 0.
@@ -59,14 +59,6 @@ int main(){
     vector<complex<double>> state, ground;
     hamiltonian HamOp(param);
 
-    HamOp.show_comput_basis();
-
-    HamOp.show_hamiltonian();
-
-    param.gz_field = 0.;
-    HamOp.set_fields(param);
-    HamOp.show_hamiltonian();
-
     // Testing and timing the diagonalization process
     cout << "Start diagonalization..." << endl;
     auto start = chrono::steady_clock::now();
@@ -77,12 +69,9 @@ int main(){
     chrono::duration<double> elapsed_seconds = end - start;
     cout << "Elapsed time : " << elapsed_seconds.count() << "s" << endl << endl;
 
-    // HamOp.show_eigenvalues();
-    // HamOp.show_eigenvectors();
     HamOp.show_eigen();
 
     ground = HamOp.compute_GS();
-
     state = HamOp.action(ground);
     cout << "The state |Psi> = H|GS> is :" << endl;
     for (auto val: state) {
@@ -90,18 +79,5 @@ int main(){
     }
     cout << endl << endl;
 
-    // Let us prepare a superposition of the two lowest
-    // energy state and evaluate the average energy
-    ground = HamOp.get_eigenstate(0);
-    state = HamOp.get_eigenstate(2);
-    for (int i = 0; i < state.size(); i++){
-        state[i] = (ground[i] + state[i]) / sqrt(2);
-    }
-    cout << "The average energy of the state below is ";
-    cout << HamOp.average_energy(state) << endl;
-    for (auto val: state) {
-        cout << fixed << setprecision(2) << val << " ";
-    }
-    cout << endl << endl;
 
 }
