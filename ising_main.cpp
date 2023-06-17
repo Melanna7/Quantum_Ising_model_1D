@@ -44,12 +44,11 @@ using namespace std;
 #define PBC_FLAG 1
 #define GZ_FIELD -1.
 #define HZ_FIELD 0.
-#define HX_FIELD 0.01
 // Range of HX (we use -HX)
-#define MIN_HX_FIELD HX_FIELD
-#define MAX_HX_FIELD 2.01
+#define MIN_HX_FIELD -2.00
+#define MAX_HX_FIELD 0.00
 #define SEP_HX_FIELD 0.02
-
+// For computing susceptibility
 #define DELTA_HZ -0.001
 
 //--- Contents -----------------------------------------------------------------
@@ -92,10 +91,11 @@ vector<double> magnetization(const vector<complex<double>>& psi) {
 
     int index, tot_states = psi.size();
     int sites = int(log2(tot_states));
-    double mag_z_tilde, mag_z, mag_x;
-    complex<double> val_c;
-    vector<double> sigmaX(sites, 0.), sigmaZ(sites, 0.), output;
+    double mag_z_tilde, mag_x, mag_y, mag_z;
+    complex<double> val_x, val_y;
+    vector<double> sigmaX(sites, 0.), sigmaY(sites, 0.), sigmaZ(sites, 0.);
     vector<vector<int>> basis;
+    vector<double> output;
 
     // Store computational basis
     basis.resize(tot_states, vector<int>(sites, 0.));
@@ -123,32 +123,48 @@ vector<double> magnetization(const vector<complex<double>>& psi) {
 
     // Compute average of sigmaX and sigmaZ over psi
     for (int i = 0; i < sites; i++) {
-        val_c = 0.;
+        val_x = 0.;
+        val_y = 0.;
         for (int n = 0; n < tot_states; n++) {
-            // Compute sigmaZ_i
-            if (basis[n][i] == 1) sigmaZ[i] += norm(psi[n]);
-            if (basis[n][i] == 0) sigmaZ[i] -= norm(psi[n]);
             // Compute sigmaX_i
             if (basis[n][i] == 1) index = n - pow(2, sites - 1 - i);
             if (basis[n][i] == 0) index = n + pow(2, sites - 1 - i);
-            val_c += conj(psi[n]) * psi[index];
+            val_x += conj(psi[n]) * psi[index];
+            // Compute sigmaY_i
+            if (basis[n][i] == 1) {
+                index = n - pow(2, sites - 1 - i);
+                val_y += conj(psi[n]) * complex(0., -1.) * psi[index];
+            }
+            if (basis[n][i] == 0) {
+                index = n + pow(2, sites - 1 - i);
+                val_y += conj(psi[n]) * complex(0., 1.) * psi[index];
+            }
+            // Compute sigmaZ_i
+            if (basis[n][i] == 1) sigmaZ[i] += norm(psi[n]);
+            if (basis[n][i] == 0) sigmaZ[i] -= norm(psi[n]);
         }
 
-        if (abs(imag(val_c)) > 1.0e-10) cerr << "Non-real X magnetiz!" << endl;
-        sigmaX[i] = real(val_c);
+        if (abs(imag(val_x)) > 1.0e-10) cerr << "Non-real X magnetiz!" << endl;
+        if (abs(imag(val_y)) > 1.0e-10) cerr << "Non-real X magnetiz!" << endl;
+        sigmaX[i] = real(val_x);
+        sigmaY[i] = real(val_y);
     }
 
-    mag_z = 0.;
     mag_x = 0.;
+    mag_y = 0.;
+    mag_z = 0.;
     for (int i = 0; i < sites; i++) {
-        mag_z += sigmaZ[i];
         mag_x += sigmaX[i];
+        mag_y += sigmaY[i];
+        mag_z += sigmaZ[i];
     }
-    mag_z = mag_z / sites;
     mag_x = mag_x / sites;
+    mag_y = mag_y / sites;
+    mag_z = mag_z / sites;
 
-    output.push_back(mag_z);
     output.push_back(mag_x);
+    output.push_back(mag_y);
+    output.push_back(mag_z);
     return output;
 }
 
@@ -158,12 +174,12 @@ void run_simulation(HamiltParameters param){
     ofstream file;
     string directory, file_name, message;
     double ener_gs, ener_gap, chi;
-    vector<double> magZZX;
+    vector<double> magZXYZ;
     vector<complex<double>> psi_gs;
     hamiltonian HamOp(param);
 
     // Define path data directory
-    directory = "Data_simulations/";
+    directory = "Data_Ising/";
     // Define name file last configuration of the lattice
     file_name = "side_" + to_string(param.num_sites) + ".dat";
 
@@ -171,14 +187,15 @@ void run_simulation(HamiltParameters param){
     // Update transverse field and take measures
     for(double hx = MIN_HX_FIELD; hx < MAX_HX_FIELD; hx += SEP_HX_FIELD){
         // Store hx field value
-        file << hx << " ";
+        file << -hx << " ";
         // Set field and diagonalize
-        param.hx_field = -hx;
+        param.hx_field = hx;
         param.hz_field = HZ_FIELD;
         HamOp.set_fields(param);
         HamOp.diagonalize();
         // Get and store GS energy and gaps
-        cout << "Side " << param.num_sites << " - Field " << hx << endl;
+        cout << "Side " << param.num_sites;
+        cout << " - Field " << setprecision(4) << hx << endl;
         ener_gs = HamOp.get_eigenvalue(0);
         file << ener_gs << " ";
         cout << "Ground state energy: " << ener_gs << endl;
@@ -190,10 +207,11 @@ void run_simulation(HamiltParameters param){
         cout << "Second energy gap: " << ener_gap << endl;
         // Get and store GS magnetizations
         psi_gs = HamOp.get_eigenstate(0);
-        magZZX = magnetization(psi_gs);
-        file << magZZX[0] << " ";
-        file << magZZX[1] << " ";
-        file << magZZX[2] << " ";
+        magZXYZ = magnetization(psi_gs);
+        file << magZXYZ[0] << " ";
+        file << magZXYZ[1] << " ";
+        file << magZXYZ[2] << " ";
+        file << magZXYZ[3] << " ";
         // Set field and diagonalize to find chi
         param.hz_field = DELTA_HZ;
         HamOp.set_fields(param);
@@ -217,7 +235,7 @@ int main(){
     param.num_sites = MIN_SIDE;
     param.gz_field = GZ_FIELD;
     param.hz_field = HZ_FIELD;
-    param.hx_field = HX_FIELD;
+    param.hx_field = MIN_HX_FIELD;
 
     for (int side = MIN_SIDE; side < MAX_SIDE; side++){
         param.num_sites = side;

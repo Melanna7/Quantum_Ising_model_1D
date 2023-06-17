@@ -36,7 +36,7 @@ def load_data():
     for side in sides:
         # define data file path
         filename = f"side_{side}.dat"
-        file_path = os.path.join("Data_simulations", filename)
+        file_path = os.path.join("Data_Ising", filename)
         print("Loading " + file_path)
         # load data from each side file
         if os.path.isfile(file_path):
@@ -54,15 +54,15 @@ def alpha_hx(data):
     values_gp = {}
 
     # load points
-    x, _, _, _, _, _, _, _ = data[4]
+    x, _, _, _, _, _, _, _, _ = data[4]
     index_nearest = min(range(len(x)), key=lambda i: abs(x[i] - 1))
     x = x[0:index_nearest]
 
     print(index_nearest)
 
     for side in sides:
-        _, _, y, _, _, _, _, _ = data[side]
-        values_gp[side] = y[0:index_nearest]
+        _, _, y, _, _, _, _, _, _ = data[side]
+        values_gp[side] = y[index_nearest:]
 
     # fit alpha
     for idx in range(index_nearest):
@@ -107,7 +107,7 @@ def plot_energy_gs(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, y, _, _, _, _, _, _ = data[side]
+        x, y, _, _, _, _, _, _, _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='lower left')
@@ -127,7 +127,7 @@ def plot_energy_gap1(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, y, _, _, _, _, _ = data[side]
+        x, _, y, _, _, _, _, _, _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='upper left')
@@ -147,7 +147,7 @@ def plot_energy_gap2(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, _, y, _, _, _, _ = data[side]
+        x, _, _, y, _, _, _, _, _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='lower right')
@@ -167,7 +167,7 @@ def plot_magnetization_z(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, _, _, y, _, _, _ = data[side]
+        x, _, _, _, y, _, _, _, _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='upper right')
@@ -175,7 +175,7 @@ def plot_magnetization_z(data):
     plt.show()
 
 def plot_magnetization_x(data):
-    """ Plot magnetization """
+    """ Plot magnetization X """
 
     title = "Plot magnetization X"
     print(title + "\n")
@@ -187,7 +187,27 @@ def plot_magnetization_x(data):
     plt.xlabel('$ hx field $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, _, _, _, _, y, _ = data[side]
+        x, _, _, _, _, y, _, _ , _ = data[side]
+        plt.errorbar(x, y, fmt='.', label=f'side = {side}')
+    # save and show
+    plt.legend(loc='lower right')
+    plt.savefig(os.path.join("Plots_and_fit", title + ".png"))
+    plt.show()
+
+def plot_magnetization_y(data):
+    """ Plot magnetization Y """
+
+    title = "Plot magnetization Y"
+    print(title + "\n")
+    # axis and style
+    fig = plt.figure(title)
+    plt.style.use('seaborn-whitegrid')
+    plt.title(title)
+    plt.ylabel(r'$ \langle M^y \rangle $')
+    plt.xlabel('$ hx field $')
+    # load and plot data in function of hx
+    for side in sides:
+        x, _, _, _, _, _, y, _ , _ = data[side]
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
     # save and show
     plt.legend(loc='lower right')
@@ -207,7 +227,7 @@ def plot_mag_scaling(data):
     plt.xlabel('$ (hx - 1) * side  $')
     # load and plot data in function of hx
     for side in sides:
-        x, _, _, _, y, _, _, _ = data[side]
+        x, _, _, _, y, _, _, _, _ = data[side]
         y = y * np.power(side, (1/8))
         x = (x - 1) * side
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
@@ -217,9 +237,9 @@ def plot_mag_scaling(data):
     plt.show()
 
 def plot_chi_scaling(data):
-    """ Plot magnetization scaling """
+    """ Plot susceptibility scaling """
 
-    title = "Plot scaling magnetization"
+    title = "Plot scaling susceptibility Z"
     print(title + "\n")
     # axis and style
     fig = plt.figure(title)
@@ -231,7 +251,7 @@ def plot_chi_scaling(data):
     plt.ylim(0.4, 2.3)
     # load and plot data in function of hx
     for side in sides:
-        x, _, _, _, _, _, _, y = data[side]
+        x, _, _, _, _, _, _, _, y = data[side]
         y = y * np.power(side, -(7/4))
         x = (x - 1) * side
         plt.errorbar(x, y, fmt='.', label=f'side = {side}')
@@ -248,6 +268,7 @@ if __name__ == '__main__':
 
     plot_magnetization_z(data)
     plot_magnetization_x(data)
+    plot_magnetization_y(data)
 
     plot_energy_gs(data)
     plot_energy_gap1(data)

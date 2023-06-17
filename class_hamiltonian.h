@@ -23,8 +23,9 @@ using namespace std;
 #define DIM_HILBERT 2
 
 struct HamiltParameters {
-    int pbc_flag, num_sites, sparse_flag;
-    double gz_field, hz_field, hx_field;
+    int pbc_flag=0, num_sites=2, sparse_flag=0;
+    double gz_field=0., gx_field=0., gy_field=0.;
+    double hz_field=0., hx_field=0., hy_field=0.;
 };
 
 //--- Contents -----------------------------------------------------------------
@@ -47,15 +48,14 @@ class hamiltonian {
 
     G_FIELD = amplitude of the spin coupling field
 
-    H_FIELD = amplitude of the longitudinal field
-
-    T_FIELD = amplitude of the transverse field
+    H_FIELD = amplitude of the single spin field
 
     *************************************************************/
 private:
     int spr_flag_, pbc_flag_;
     int tot_length_, tot_states_;
-    double gz_field, hz_field, hx_field;
+    double gx_field, gy_field, gz_field;
+    double hx_field, hy_field, hz_field;
 
 public:
     vector<double> eigval;
@@ -66,9 +66,12 @@ public:
         tot_length_(param.num_sites),
         spr_flag_(param.sparse_flag),
         pbc_flag_(param.pbc_flag),
+        gx_field(param.gx_field),
+        gy_field(param.gy_field),
         gz_field(param.gz_field),
-        hz_field(param.hz_field),
-        hx_field(param.hx_field)
+        hx_field(param.hx_field),
+        hy_field(param.hy_field),
+        hz_field(param.hz_field)
     {// CONSTRUCTION BEGIN
         int index = 0;
 
@@ -108,22 +111,6 @@ public:
         for (int i = 0; i < tot_states_; i++)
             for (int j = 0; j < tot_states_; j++)
                 hamilt[i][j] = 0.;
-        // Sigma_z Sigma_z [coupling]
-        for (int i = 0; i < tot_length_ - 1; i++) {
-            for (int n = 0; n < tot_states_; n++) {
-                if (basis[n][i] == basis[n][i+1]) hamilt[n][n] += gz_field;
-                if (basis[n][i] != basis[n][i+1]) hamilt[n][n] -= gz_field;
-            }
-        }
-        // Sigma_z Sigma_z boundary conditions
-        if (pbc_flag_) {
-            for (int n = 0; n < tot_states_; n++) {
-                if (basis[n][tot_length_ - 1] == basis[n][0])
-                    hamilt[n][n] += gz_field;
-                if (basis[n][tot_length_ - 1] != basis[n][0])
-                    hamilt[n][n] -= gz_field;
-            }
-        }
         // Sigma_z [longitudinal field]
         for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
@@ -137,6 +124,99 @@ public:
                 if (basis[n][i] == 1) index = n - pow(2, tot_length_ - 1 - i);
                 if (basis[n][i] == 0) index = n + pow(2, tot_length_ - 1 - i);
                 hamilt[index][n] += hx_field;
+            }
+        }
+        // Sigma_y [transverse field]
+        for (int i = 0; i < tot_length_; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == 1) {
+                    index = n - pow(2, tot_length_ - 1 - i);
+                    hamilt[index][n] -= hy_field * complex(0., 1.);
+                }
+                if (basis[n][i] == 0) {
+                    index = n + pow(2, tot_length_ - 1 - i);
+                    hamilt[index][n] += hy_field * complex(0., 1.);
+                }
+            }
+        }
+        // Sigma_z Sigma_z [coupling]
+        for (int i = 0; i < tot_length_ - 1; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == basis[n][i+1]) hamilt[n][n] += gz_field;
+                if (basis[n][i] != basis[n][i+1]) hamilt[n][n] -= gz_field;
+            }
+        }
+        // Sigma_z Sigma_z [boundary conditions]
+        if (pbc_flag_) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][tot_length_ - 1] == basis[n][0])
+                    hamilt[n][n] += gz_field;
+                if (basis[n][tot_length_ - 1] != basis[n][0])
+                    hamilt[n][n] -= gz_field;
+            }
+        }
+        // Sigma_x Sigma_x [coupling]
+        for (int i = 0; i < tot_length_ - 1; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == 1)
+                    index = n - pow(2, tot_length_ - 1 - i);
+                if (basis[n][i] == 0)
+                    index = n + pow(2, tot_length_ - 1 - i);
+                if (basis[n][i+1] == 1)
+                    index -= pow(2, tot_length_ - 2 - i);
+                if (basis[n][i+1] == 0)
+                    index += pow(2, tot_length_ - 2 - i);
+                hamilt[index][n] +=  gx_field;
+            }
+        }
+        // Sigma_x Sigma_x [boundary conditions]
+        if (pbc_flag_) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][0] == 1)
+                    index = n - pow(2, tot_length_ - 1);
+                if (basis[n][0] == 0)
+                    index = n + pow(2, tot_length_ - 1);
+                if (basis[n][tot_length_ - 1] == 1)
+                    index -= 1;
+                if (basis[n][tot_length_ - 1] == 0)
+                    index += 1;
+                hamilt[index][n] +=  gx_field;
+            }
+        }
+        // Sigma_y Sigma_y [coupling]
+        for (int i = 0; i < tot_length_ - 1; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == 1)
+                    index = n - pow(2, tot_length_ - 1 - i);
+                if (basis[n][i] == 0)
+                    index = n + pow(2, tot_length_ - 1 - i);
+                if (basis[n][i+1] == 1)
+                    index -= pow(2, tot_length_ - 2 - i);
+                if (basis[n][i+1] == 0)
+                    index += pow(2, tot_length_ - 2 - i);
+
+                if (basis[n][i] == basis[n][i+1])
+                    hamilt[index][n] -= gy_field;
+                if (basis[n][i] != basis[n][i+1])
+                    hamilt[index][n] +=  gy_field;
+            }
+        }
+        // Sigma_y Sigma_y [boundary conditions]
+        if (pbc_flag_) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][0] == 1)
+                    index = n - pow(2, tot_length_ - 1);
+                if (basis[n][0] == 0)
+                    index = n + pow(2, tot_length_ - 1);
+                if (basis[n][tot_length_ - 1] == 1)
+                    index -= 1;
+                if (basis[n][tot_length_ - 1] == 0)
+                    index += 1;
+
+                if (basis[n][tot_length_ - 1] == basis[n][0])
+                    hamilt[index][n] -=  gy_field;
+                if (basis[n][tot_length_ - 1] != basis[n][0])
+                    hamilt[index][n] +=  gy_field;
             }
         }
         // Check if the Hamiltonian is hermitian
@@ -160,24 +240,6 @@ public:
         int index;
         vector<complex<double>> psi_out(tot_states_, 0.);
 
-        // Sigma_z Sigma_z [coupling]
-        for (int i = 0; i < tot_length_ - 1; i++) {
-            for (int n = 0; n < tot_states_; n++) {
-                if (basis[n][i] == basis[n][i + 1])
-                    psi_out[n] += gz_field * psi_in[n];
-                if (basis[n][i] != basis[n][i + 1])
-                    psi_out[n] -= gz_field * psi_in[n];
-            }
-        }
-        // Sigma_z Sigma_z boundary conditions
-        if (pbc_flag_) {
-            for (int n = 0; n < tot_states_; n++) {
-                if (basis[n][tot_length_ - 1] == basis[n][0])
-                    psi_out[n] += gz_field * psi_in[n];
-                if (basis[n][tot_length_ - 1] != basis[n][0])
-                    psi_out[n] -= gz_field * psi_in[n];
-          }
-        }
         // Sigma_z [longitudinal field]
         for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
@@ -191,6 +253,101 @@ public:
                 if (basis[n][i] == 1) index = n - pow(2, tot_length_ - 1 - i);
                 if (basis[n][i] == 0) index = n + pow(2, tot_length_ - 1 - i);
                 psi_out[index] += hx_field * psi_in[n];
+            }
+        }
+        // Sigma_y [transverse field]
+        for (int i = 0; i < tot_length_; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == 1) {
+                    index = n - pow(2, tot_length_ - 1 - i);
+                    psi_out[index] += hy_field * complex(0., -1.) * psi_in[n];
+                }
+                if (basis[n][i] == 0) {
+                    index = n + pow(2, tot_length_ - 1 - i);
+                    psi_out[index] += hy_field * complex(0., 1.) * psi_in[n];
+                }
+            }
+        }
+        // Sigma_z Sigma_z [coupling]
+        for (int i = 0; i < tot_length_ - 1; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == basis[n][i + 1])
+                    psi_out[n] += gz_field * psi_in[n];
+                if (basis[n][i] != basis[n][i + 1])
+                    psi_out[n] -= gz_field * psi_in[n];
+            }
+        }
+        // Sigma_z Sigma_z [boundary conditions]
+        if (pbc_flag_) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][tot_length_ - 1] == basis[n][0])
+                    psi_out[n] += gz_field * psi_in[n];
+                if (basis[n][tot_length_ - 1] != basis[n][0])
+                    psi_out[n] -= gz_field * psi_in[n];
+          }
+        }
+        // Sigma_x Sigma_x [coupling]
+        for (int i = 0; i < tot_length_ - 1; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == 1)
+                    index = n - pow(2, tot_length_ - 1 - i);
+                if (basis[n][i] == 0)
+                    index = n + pow(2, tot_length_ - 1 - i);
+                if (basis[n][i+1] == 1)
+                    index -= pow(2, tot_length_ - 2 - i);
+                if (basis[n][i+1] == 0)
+                    index += pow(2, tot_length_ - 2 - i);
+                psi_out[index] += gx_field * psi_in[n];
+            }
+        }
+        // Sigma_x Sigma_x [boundary conditions]
+        if (pbc_flag_) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][0] == 1)
+                    index = n - pow(2, tot_length_ - 1);
+                if (basis[n][0] == 0)
+                    index = n + pow(2, tot_length_ - 1);
+                if (basis[n][tot_length_ - 1] == 1)
+                    index -= 1;
+                if (basis[n][tot_length_ - 1] == 0)
+                    index += 1;
+                psi_out[index] += gx_field * psi_in[n];
+            }
+        }
+        // Sigma_y Sigma_y [coupling]
+        for (int i = 0; i < tot_length_ - 1; i++) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][i] == 1)
+                    index = n - pow(2, tot_length_ - 1 - i);
+                if (basis[n][i] == 0)
+                    index = n + pow(2, tot_length_ - 1 - i);
+                if (basis[n][i+1] == 1)
+                    index -= pow(2, tot_length_ - 2 - i);
+                if (basis[n][i+1] == 0)
+                    index += pow(2, tot_length_ - 2 - i);
+
+                if (basis[n][i] == basis[n][i+1])
+                    psi_out[index] -= gy_field * psi_in[n];
+                if (basis[n][i] != basis[n][i+1])
+                    psi_out[index] += gy_field * psi_in[n];
+            }
+        }
+        // Sigma_y Sigma_y [boundary conditions]
+        if (pbc_flag_) {
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis[n][0] == 1)
+                    index = n - pow(2, tot_length_ - 1);
+                if (basis[n][0] == 0)
+                    index = n + pow(2, tot_length_ - 1);
+                if (basis[n][tot_length_ - 1] == 1)
+                    index -= 1;
+                if (basis[n][tot_length_ - 1] == 0)
+                    index += 1;
+
+                if (basis[n][tot_length_ - 1] == basis[n][0])
+                    psi_out[index] -= gy_field * psi_in[n];
+                if (basis[n][tot_length_ - 1] != basis[n][0])
+                    psi_out[index] += gy_field * psi_in[n];
             }
         }
 

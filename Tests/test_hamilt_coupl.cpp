@@ -30,18 +30,13 @@ using namespace std;
 *
 * G_FIELD = amplitude of the spin coupling field
 *
-* H_FIELD = amplitude of the longitudinal field
-*
-* T_FIELD = amplitude of the transverse field
+* H_FIELD = amplitude of the single spin field
 *
 *******************************************************************************/
 
-#define SIDE 3
+#define SIDE 2
 #define SPARSE_FLAG 0
-#define PBC_FLAG 0
-#define GZ_FIELD -1.
-#define HZ_FIELD 0.
-#define HX_FIELD -1.
+#define PBC_FLAG 1
 
 //--- Main Test ----------------------------------------------------------------
 
@@ -52,9 +47,12 @@ int main(){
     param.sparse_flag = SPARSE_FLAG;
     param.pbc_flag = PBC_FLAG;
     param.num_sites = SIDE;
-    param.gz_field = GZ_FIELD;
-    param.hz_field = HZ_FIELD;
-    param.hx_field = HX_FIELD;
+    param.gz_field = 1.;
+    param.gy_field = 1.;
+    param.gx_field = 0.5;
+    param.hz_field = 0.;
+    param.hy_field = 0.;
+    param.hx_field = 0.;
 
     vector<complex<double>> state, ground;
     hamiltonian HamOp(param);
@@ -63,9 +61,9 @@ int main(){
 
     HamOp.show_hamiltonian();
 
-    param.gz_field = 0.;
-    HamOp.set_fields(param);
-    HamOp.show_hamiltonian();
+    // param.hz_field = 1.;
+    // HamOp.set_fields(param);
+    // HamOp.show_hamiltonian();
 
     // Testing and timing the diagonalization process
     cout << "Start diagonalization..." << endl;
