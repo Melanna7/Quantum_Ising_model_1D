@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Test program for the Ising simulation
+* Test program for the Class hamilt_L
 *
 *******************************************************************************/
 
@@ -10,8 +10,8 @@
 #include <chrono>
 #include <cmath>
 
-// Import the Class lattice
-#include "../class_hamiltonian.h"
+// Import the Class hamilt_L
+#include "../class_lapacke.h"
 
 using namespace std;
 
@@ -43,7 +43,7 @@ using namespace std;
 int main(){
     /* Test the methods of the hamiltonian Class. */
 
-    HamiltParameters param;
+    Parameters_L param;
     param.sparse_flag = SPARSE_FLAG;
     param.pbc_flag = PBC_FLAG;
     param.num_sites = SIDE;
@@ -55,7 +55,7 @@ int main(){
     param.hx_field = 0.;
 
     vector<complex<double>> state, ground;
-    hamiltonian HamOp(param);
+    hamilt_L HamOp(param);
 
     HamOp.show_comput_basis();
 

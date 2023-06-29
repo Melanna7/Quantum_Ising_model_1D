@@ -6,15 +6,14 @@
 
 //--- Preprocessor directives --------------------------------------------------
 
-#ifndef ISING_HAMILT_CLASS_H
-#define ISING_HAMILT_CLASS_H
+#ifndef HAMILT_CLASS_L_H
+#define HAMILT_CLASS_L_H
 
 #include <iostream>
 #include <iomanip>
-
+#include <cmath>
 #include <vector>
 #include <complex>
-#include <cmath>
 
 #include <lapacke.h>
 
@@ -22,7 +21,7 @@ using namespace std;
 
 #define DIM_HILBERT 2
 
-struct HamiltParameters {
+struct Parameters_L {
     int pbc_flag=0, num_sites=2, sparse_flag=0;
     double gz_field=0., gx_field=0., gy_field=0.;
     double hz_field=0., hx_field=0., hy_field=0.;
@@ -30,7 +29,7 @@ struct HamiltParameters {
 
 //--- Contents -----------------------------------------------------------------
 
-class hamiltonian {
+class hamilt_L {
     /* Hamiltonian operator class */
     /* Class constructor ******************************************
 
@@ -62,7 +61,7 @@ public:
     vector<vector<int>> basis;
     vector<vector<complex<double>>> hamilt, eigvec;
 
-    hamiltonian(const HamiltParameters& param):
+    hamilt_L(const Parameters_L& param):
         tot_length_(param.num_sites),
         spr_flag_(param.sparse_flag),
         pbc_flag_(param.pbc_flag),
@@ -362,7 +361,7 @@ public:
         return state_out;
     }
 
-    void set_fields(const HamiltParameters& param) {
+    void set_fields(const Parameters_L& param) {
         /* Rebuild the Hamiltonian changing the value of gz_field */
 
         gz_field = param.gz_field;
@@ -463,7 +462,10 @@ public:
             }
             //------------------------------------------------------------------
         } else {
-            // Partial diagonalization with ARPACK++
+            // Partial diagonalization with ARPACKpp ---------------------------
+
+            cout << "Sparse diagonalizations not implemented yet!" << endl;
+            cout << endl;
 
             //------------------------------------------------------------------
         }
