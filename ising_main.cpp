@@ -10,9 +10,8 @@
 #include <fstream>
 #include <string>
 #include <chrono>
-#include <cmath>
 
-#include "class_hamiltonian.h"
+#include "class_Eigen.h"
 
 using namespace std;
 
@@ -31,44 +30,34 @@ using namespace std;
 *
 * G_FIELD = amplitude of the spin coupling field
 *
-* H_FIELD = amplitude of the longitudinal field
-*
-* T_FIELD = amplitude of the transverse field
+* H_FIELD = amplitude of the external field
 *
 *******************************************************************************/
 
-#define MIN_SIDE 4
-#define MAX_SIDE 10
-
-#define SPARSE_FLAG 0
+// Range sides
+#define MIN_SIDE 12
+#define MAX_SIDE 15
+// General settings
+#define SPARSE_FLAG 3
 #define PBC_FLAG 1
 #define GZ_FIELD -1.
 #define HZ_FIELD 0.
-// Range of HX (we use -HX)
+// Range of HX
 #define MIN_HX_FIELD -2.00
 #define MAX_HX_FIELD 0.00
 #define SEP_HX_FIELD 0.02
-// For computing susceptibility
+// For susceptibility
 #define DELTA_HZ -0.001
+
+vector<vector<int>> basis;
 
 //--- Contents -----------------------------------------------------------------
 
-double susceptibility(const vector<complex<double>>& psi) {
+double susceptibility(const VectorXcd& psi) {
     int index, tot_states = psi.size();
     int sites = int(log2(tot_states));
     double mag_z, chi;
     vector<double> sigmaZ(sites, 0.);
-    vector<vector<int>> basis;
-
-    // Store computational basis
-    basis.resize(tot_states, vector<int>(sites, 0.));
-    for (int n = 0; n < tot_states; n++) {
-        index = n;
-        for (int i = 0; i < sites; i++) {
-            basis[n][sites - i - 1] = index % 2;
-            index = index / 2;
-        }
-    }
 
     // Compute average of sigmaZ over psi
     for (int i = 0; i < sites; i++) {
@@ -87,25 +76,14 @@ double susceptibility(const vector<complex<double>>& psi) {
     return chi;
 }
 
-vector<double> magnetization(const vector<complex<double>>& psi) {
+vector<double> magnetization(const VectorXcd& psi) {
 
     int index, tot_states = psi.size();
     int sites = int(log2(tot_states));
     double mag_z_tilde, mag_x, mag_y, mag_z;
     complex<double> val_x, val_y;
     vector<double> sigmaX(sites, 0.), sigmaY(sites, 0.), sigmaZ(sites, 0.);
-    vector<vector<int>> basis;
     vector<double> output;
-
-    // Store computational basis
-    basis.resize(tot_states, vector<int>(sites, 0.));
-    for (int n = 0; n < tot_states; n++) {
-        index = n;
-        for (int i = 0; i < sites; i++) {
-            basis[n][sites - i - 1] = index % 2;
-            index = index / 2;
-        }
-    }
 
     // Compute Symmetry-broken magnetization
     mag_z_tilde = 0.;
@@ -119,7 +97,7 @@ vector<double> magnetization(const vector<complex<double>>& psi) {
     }
     mag_z_tilde = mag_z_tilde / sites;
     output.push_back(mag_z_tilde);
-    cout << "Symmetry-broken magnet along Z: " << mag_z_tilde << endl << endl;
+    cout << "Symmetry-broken magnet along Z: " << mag_z_tilde << endl;
 
     // Compute average of sigmaX and sigmaZ over psi
     for (int i = 0; i < sites; i++) {
@@ -175,7 +153,7 @@ void run_simulation(HamiltParameters param){
     string directory, file_name, message;
     double ener_gs, ener_gap, chi;
     vector<double> magZXYZ;
-    vector<complex<double>> psi_gs;
+    VectorXcd psi_gs;
     hamiltonian HamOp(param);
 
     // Define path data directory
@@ -206,7 +184,7 @@ void run_simulation(HamiltParameters param){
         file << ener_gap << " ";
         cout << "Second energy gap: " << ener_gap << endl;
         // Get and store GS magnetizations
-        psi_gs = HamOp.get_eigenstate(0);
+        psi_gs = HamOp.get_eigenvector(0);
         magZXYZ = magnetization(psi_gs);
         file << magZXYZ[0] << " ";
         file << magZXYZ[1] << " ";
@@ -216,9 +194,10 @@ void run_simulation(HamiltParameters param){
         param.hz_field = DELTA_HZ;
         HamOp.set_fields(param);
         HamOp.diagonalize();
-        psi_gs = HamOp.get_eigenstate(0);
+        psi_gs = HamOp.get_eigenvector(0);
         chi = susceptibility(psi_gs);
         file << chi << endl;
+        cout << "Finished." << endl << endl;
     }
 
     file.close();
@@ -238,9 +217,30 @@ int main(){
     param.hx_field = MIN_HX_FIELD;
 
     for (int side = MIN_SIDE; side < MAX_SIDE; side++){
+
+        int index, tot_states = pow(2, side);
+
+        // Store computational basis
+        basis.resize(tot_states, vector<int>(side, 0.));
+        for (int n = 0; n < tot_states; n++) {
+            index = n;
+            for (int i = 0; i < side; i++) {
+                basis[n][side - i - 1] = index % 2;
+                index = index / 2;
+            }
+        }
+
+        cout << "Start new side" << endl;
+        auto start = chrono::steady_clock::now();
+
         param.num_sites = side;
-        if (side == 10) param.sparse_flag = 3;
         run_simulation(param);
+
+        auto end = chrono::steady_clock::now();
+        chrono::duration<double> elapsed_sec = end - start;
+        cout << "Elapsed time: " << elapsed_sec.count() << "s" << endl << endl;
     }
+
+
 
 }

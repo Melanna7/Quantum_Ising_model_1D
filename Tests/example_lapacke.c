@@ -4,6 +4,8 @@
 *
 *******************************************************************************/
 
+// gcc example_lapacke.c -llapacke -o example_lapacke
+
 //--- Preprocessor directives --------------------------------------------------
 
 #include <stdlib.h>

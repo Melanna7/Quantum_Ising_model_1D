@@ -4,11 +4,12 @@
 *
 *******************************************************************************/
 
+// g++ ../class_lapacke.h test_lapacke.cpp -llapacke -o e_lapacke
+
 //--- Preprocessor directives --------------------------------------------------
 
 #include <iostream>
 #include <chrono>
-#include <cmath>
 
 // Import the Class hamilt_L
 #include "../class_lapacke.h"
@@ -43,7 +44,7 @@ using namespace std;
 int main(){
     /* Test the methods of the hamiltonian Class. */
 
-    Parameters_L param;
+    HamiltParameters param;
     param.sparse_flag = SPARSE_FLAG;
     param.pbc_flag = PBC_FLAG;
     param.num_sites = SIDE;

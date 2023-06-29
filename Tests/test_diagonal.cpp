@@ -4,11 +4,12 @@
 *
 *******************************************************************************/
 
+// g++ ../class_Eigen.h ../class_lapacke.h test_diagonal.cpp -llapacke -o e_diff
+
 //--- Preprocessor directives --------------------------------------------------
 
 #include <iostream>
 #include <chrono>
-#include <cmath>
 
 // Import the Class hamiltonian
 #include "../class_Eigen.h"
@@ -31,24 +32,12 @@ int main(){
     param.hy_field = 0.;
     param.hx_field = 0.3;
 
-    Parameters_L para_L;
-    para_L.sparse_flag = param.sparse_flag;
-    para_L.pbc_flag = param.pbc_flag;
-    para_L.num_sites = param.num_sites;
-    para_L.gz_field = param.gz_field;
-    para_L.gy_field = param.gy_field;
-    para_L.gx_field = param.gx_field;
-    para_L.hz_field = param.hz_field;
-    para_L.hy_field = param.hy_field;
-    para_L.hx_field = param.hx_field;
-
-    vector<complex<double>> state, ground;
-    complex<double> lambda;
+    vector<complex<double>> state;
     VectorXcd v, w;
 
-    hamilt_L Ham_L(para_L);
+    hamilt_L Ham_L(param);
     hamiltonian Ham_E(param);
-    param.sparse_flag = 8;
+    param.sparse_flag = pow(2, param.num_sites);
     hamiltonian Ham_S(param);
 
     // Testing and timing the diagonalization process

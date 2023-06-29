@@ -6,9 +6,6 @@
 
 //--- Preprocessor directives --------------------------------------------------
 
-#ifndef HAMILT_CLASS_H
-#define HAMILT_CLASS_H
-
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
@@ -16,7 +13,6 @@
 #include <complex>
 
 // include Eigen modules
-// https://eigen.tuxfamily.org/dox/group__QuickRefPage.html#QuickRef_Headers
 //#include <Eigen/Eigen>
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -32,13 +28,21 @@ using namespace std;
 using namespace Eigen;
 using lambda_lanczos::LambdaLanczos;
 
+//--- Contents -----------------------------------------------------------------
+
+#ifndef PARAM_CLASS_H
+#define PARAM_CLASS_H
+
 struct HamiltParameters {
     int pbc_flag=0, num_sites=2, sparse_flag=0;
     double gz_field=0., gx_field=0., gy_field=0.;
     double hz_field=0., hx_field=0., hy_field=0.;
 };
 
-//--- Contents -----------------------------------------------------------------
+#endif
+
+#ifndef HAMILT_CLASS_H
+#define HAMILT_CLASS_H
 
 class hamiltonian {
     /* Hamiltonian operator class */
@@ -68,7 +72,7 @@ private:
     double hx_field, hy_field, hz_field;
 
 public:
-    VectorXcd eigenvalues;
+    VectorXd eigenvalues;
     MatrixXi basis;
     MatrixXcd dense_hamilt, eigenvectors;
     SparseMatrix<complex<double>> spars_hamilt;
@@ -497,7 +501,7 @@ public:
 
     }
 
-    complex<double> get_eigenvalue(int k){
+    double get_eigenvalue(int k){
         /* After Diagonalization returns the k-th eigenvalue */
 
         int limit = tot_states_;
@@ -551,7 +555,7 @@ public:
 
         cout << "Eigenvalues" << endl;
         for (const auto& val : eigenvalues)
-            cout << setprecision(4) << val.real() << " ";
+            cout << setprecision(4) << val << " ";
         cout << endl << endl;
     }
 

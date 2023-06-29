@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit
 
 SIDE_SEP = 1
 SIDE_MIN = 4
-SIDE_MAX = 9
+SIDE_MAX = 15
 
 sides = np.arange(SIDE_MIN, SIDE_MAX+1, SIDE_SEP, dtype='int')
 

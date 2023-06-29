@@ -4,6 +4,8 @@
 *
 *******************************************************************************/
 
+// g++ ../class_Eigen.h test_Eigen.cpp -o e_eigen
+
 //--- Preprocessor directives --------------------------------------------------
 
 #include <iostream>
@@ -50,7 +52,7 @@ int main(){
     param.hy_field = 1.;
     param.hx_field = 1.;
 
-    complex<double> lambda;
+    double lambda;
     VectorXcd v, w;
     hamiltonian HamOp(param);
 

@@ -6,9 +6,6 @@
 
 //--- Preprocessor directives --------------------------------------------------
 
-#ifndef HAMILT_CLASS_L_H
-#define HAMILT_CLASS_L_H
-
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -21,13 +18,21 @@ using namespace std;
 
 #define DIM_HILBERT 2
 
-struct Parameters_L {
+//--- Contents -----------------------------------------------------------------
+
+#ifndef PARAM_CLASS_H
+#define PARAM_CLASS_H
+
+struct HamiltParameters {
     int pbc_flag=0, num_sites=2, sparse_flag=0;
     double gz_field=0., gx_field=0., gy_field=0.;
     double hz_field=0., hx_field=0., hy_field=0.;
 };
 
-//--- Contents -----------------------------------------------------------------
+#endif
+
+#ifndef HAMILT_CLASS_L_H
+#define HAMILT_CLASS_L_H
 
 class hamilt_L {
     /* Hamiltonian operator class */
@@ -61,7 +66,7 @@ public:
     vector<vector<int>> basis;
     vector<vector<complex<double>>> hamilt, eigvec;
 
-    hamilt_L(const Parameters_L& param):
+    hamilt_L(const HamiltParameters& param):
         tot_length_(param.num_sites),
         spr_flag_(param.sparse_flag),
         pbc_flag_(param.pbc_flag),
@@ -361,7 +366,7 @@ public:
         return state_out;
     }
 
-    void set_fields(const Parameters_L& param) {
+    void set_fields(const HamiltParameters& param) {
         /* Rebuild the Hamiltonian changing the value of gz_field */
 
         gz_field = param.gz_field;
