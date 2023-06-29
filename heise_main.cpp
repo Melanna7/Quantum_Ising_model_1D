@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Main program for the Ising simulation
+* Main program for the Heisenberg simulation
 *
 *******************************************************************************/
 
@@ -10,9 +10,8 @@
 #include <fstream>
 #include <string>
 #include <chrono>
-#include <cmath>
 
-#include "class_hamiltonian.h"
+#include "class_Eigen.h"
 
 using namespace std;
 
@@ -31,16 +30,15 @@ using namespace std;
 *
 * G_FIELD = amplitude of the spin coupling field
 *
-* H_FIELD = amplitude of the longitudinal field
-*
-* T_FIELD = amplitude of the transverse field
+* H_FIELD = amplitude of the external field
 *
 *******************************************************************************/
 
+// Range sides
 #define MIN_SIDE 4
-#define MAX_SIDE 8
-
-#define SPARSE_FLAG 0
+#define MAX_SIDE 15
+// General settings
+#define SPARSE_FLAG 3
 #define PBC_FLAG 1
 #define GZ_FIELD 1.
 #define GY_FIELD 1.
@@ -50,29 +48,20 @@ using namespace std;
 #define MAX_GX_FIELD 20.0
 #define SEP_GX_FIELD 0.1
 
+vector<vector<int>> basis;
+
 //--- Contents -----------------------------------------------------------------
 
-vector<double> magnetization(const vector<complex<double>>& psi) {
+vector<double> magnetization(const VectorXcd& psi) {
 
     int index, tot_states = psi.size();
     int sites = int(log2(tot_states));
     double mag_x, mag_y, mag_z, val_o;
     complex<double> val_x, val_y;
     vector<double> sigmaX(sites, 0.), sigmaY(sites, 0.), sigmaZ(sites, 0.);
-    vector<vector<int>> basis;
     vector<double> output;
 
-    // Store computational basis
-    basis.resize(tot_states, vector<int>(sites, 0.));
-    for (int n = 0; n < tot_states; n++) {
-        index = n;
-        for (int i = 0; i < sites; i++) {
-            basis[n][sites - i - 1] = index % 2;
-            index = index / 2;
-        }
-    }
-
-    // Compute average of sigmaX and sigmaZ over psi
+    // Compute average of sigmaX, sigmaY and sigmaZ over psi
     for (int i = 0; i < sites; i++) {
         val_x = 0.;
         val_y = 0.;
@@ -96,7 +85,7 @@ vector<double> magnetization(const vector<complex<double>>& psi) {
         }
 
         if (abs(imag(val_x)) > 1.0e-10) cerr << "Non-real X magnetiz!" << endl;
-        if (abs(imag(val_y)) > 1.0e-10) cerr << "Non-real X magnetiz!" << endl;
+        if (abs(imag(val_y)) > 1.0e-10) cerr << "Non-real Y magnetiz!" << endl;
         sigmaX[i] = real(val_x);
         sigmaY[i] = real(val_y);
     }
@@ -130,7 +119,7 @@ void run_simulation(HamiltParameters param){
     string directory, file_name, message;
     double ener_gs, ener_gap, chi;
     vector<double> magZXYZ;
-    vector<complex<double>> psi_gs;
+    VectorXcd psi_gs;
     hamiltonian HamOp(param);
 
     // Define path data directory
@@ -161,13 +150,15 @@ void run_simulation(HamiltParameters param){
         file << ener_gap << " ";
         cout << "Second energy gap: " << ener_gap << endl;
         // Get and store GS magnetizations
-        psi_gs = HamOp.get_eigenstate(0);
+        psi_gs = HamOp.get_eigenvector(0);
         magZXYZ = magnetization(psi_gs);
+        cout << "Symmetry-broken parameter: " << magZXYZ[0] << endl;
         file << magZXYZ[0] << " ";
         file << magZXYZ[1] << " ";
         file << magZXYZ[2] << " ";
         file << magZXYZ[3] << " ";
-        file << 0. << endl;
+        file << 0. << endl; // Eventually for susceptibility
+        cout << "Finished." << endl << endl;
     }
 
     file.close();
@@ -176,7 +167,6 @@ void run_simulation(HamiltParameters param){
 //--- Main sim -----------------------------------------------------------------
 
 int main(){
-    /* Test the methods of the hamiltonian Class. */
 
     HamiltParameters param;
     param.sparse_flag = SPARSE_FLAG;
@@ -186,10 +176,29 @@ int main(){
     param.gy_field = GY_FIELD;
     param.gx_field = MIN_GX_FIELD;
 
-    for (int side = MIN_SIDE; side < MAX_SIDE; side++){
+    for (int side = MIN_SIDE; side <= MAX_SIDE; side++){
+
+        int index, tot_states = pow(2, side);
+
+        // Store computational basis
+        basis.resize(tot_states, vector<int>(side, 0.));
+        for (int n = 0; n < tot_states; n++) {
+            index = n;
+            for (int i = 0; i < side; i++) {
+                basis[n][side - i - 1] = index % 2;
+                index = index / 2;
+            }
+        }
+
+        cout << "Start new side" << endl;
+        auto start = chrono::steady_clock::now();
+
         param.num_sites = side;
-        if (side == 10) param.sparse_flag = 3;
         run_simulation(param);
+
+        auto end = chrono::steady_clock::now();
+        chrono::duration<double> elapsed_sec = end - start;
+        cout << "Elapsed time: " << elapsed_sec.count() << "s" << endl << endl;
     }
 
 }

@@ -4,7 +4,7 @@
 *
 *******************************************************************************/
 
-// g++ ../class_Eigen.h test_Eigen.cpp -o e_eigen
+// g++ ../class_Eigen.h test_Eigen.cpp -o e_eigen.out
 
 //--- Preprocessor directives --------------------------------------------------
 

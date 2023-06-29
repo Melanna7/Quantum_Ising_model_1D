@@ -35,7 +35,7 @@ using namespace std;
 *******************************************************************************/
 
 // Range sides
-#define MIN_SIDE 12
+#define MIN_SIDE 4
 #define MAX_SIDE 15
 // General settings
 #define SPARSE_FLAG 3
@@ -52,29 +52,6 @@ using namespace std;
 vector<vector<int>> basis;
 
 //--- Contents -----------------------------------------------------------------
-
-double susceptibility(const VectorXcd& psi) {
-    int index, tot_states = psi.size();
-    int sites = int(log2(tot_states));
-    double mag_z, chi;
-    vector<double> sigmaZ(sites, 0.);
-
-    // Compute average of sigmaZ over psi
-    for (int i = 0; i < sites; i++) {
-        for (int n = 0; n < tot_states; n++) {
-            // Compute sigmaZ_i
-            if (basis[n][i] == 1) sigmaZ[i] += norm(psi[n]);
-            if (basis[n][i] == 0) sigmaZ[i] -= norm(psi[n]);
-        }
-    }
-
-    mag_z = 0.;
-    for (int i = 0; i < sites; i++) mag_z += sigmaZ[i];
-    mag_z = mag_z / sites;
-    chi = mag_z / DELTA_HZ;
-
-    return chi;
-}
 
 vector<double> magnetization(const VectorXcd& psi) {
 
@@ -99,7 +76,7 @@ vector<double> magnetization(const VectorXcd& psi) {
     output.push_back(mag_z_tilde);
     cout << "Symmetry-broken magnet along Z: " << mag_z_tilde << endl;
 
-    // Compute average of sigmaX and sigmaZ over psi
+    // Compute average of sigmaX, sigmaY and sigmaZ over psi
     for (int i = 0; i < sites; i++) {
         val_x = 0.;
         val_y = 0.;
@@ -123,7 +100,7 @@ vector<double> magnetization(const VectorXcd& psi) {
         }
 
         if (abs(imag(val_x)) > 1.0e-10) cerr << "Non-real X magnetiz!" << endl;
-        if (abs(imag(val_y)) > 1.0e-10) cerr << "Non-real X magnetiz!" << endl;
+        if (abs(imag(val_y)) > 1.0e-10) cerr << "Non-real Y magnetiz!" << endl;
         sigmaX[i] = real(val_x);
         sigmaY[i] = real(val_y);
     }
@@ -144,6 +121,29 @@ vector<double> magnetization(const VectorXcd& psi) {
     output.push_back(mag_y);
     output.push_back(mag_z);
     return output;
+}
+
+double susceptibility(const VectorXcd& psi) {
+    int index, tot_states = psi.size();
+    int sites = int(log2(tot_states));
+    double mag_z, chi;
+    vector<double> sigmaZ(sites, 0.);
+
+    // Compute average of sigmaZ over psi
+    for (int i = 0; i < sites; i++) {
+        for (int n = 0; n < tot_states; n++) {
+            // Compute sigmaZ_i
+            if (basis[n][i] == 1) sigmaZ[i] += norm(psi[n]);
+            if (basis[n][i] == 0) sigmaZ[i] -= norm(psi[n]);
+        }
+    }
+
+    mag_z = 0.;
+    for (int i = 0; i < sites; i++) mag_z += sigmaZ[i];
+    mag_z = mag_z / sites;
+    chi = mag_z / DELTA_HZ;
+
+    return chi;
 }
 
 void run_simulation(HamiltParameters param){
@@ -206,7 +206,6 @@ void run_simulation(HamiltParameters param){
 //--- Main sim -----------------------------------------------------------------
 
 int main(){
-    /* Test the methods of the hamiltonian Class. */
 
     HamiltParameters param;
     param.sparse_flag = SPARSE_FLAG;
@@ -240,7 +239,4 @@ int main(){
         chrono::duration<double> elapsed_sec = end - start;
         cout << "Elapsed time: " << elapsed_sec.count() << "s" << endl << endl;
     }
-
-
-
 }
