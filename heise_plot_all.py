@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 SIDE_SEP = 1
 SIDE_MIN = 4
-SIDE_MAX = 15
+SIDE_MAX = 11
 
 sides = np.arange(SIDE_MIN, SIDE_MAX+1, SIDE_SEP, dtype='int')
 

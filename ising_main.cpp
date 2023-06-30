@@ -215,7 +215,9 @@ int main(){
     param.hz_field = HZ_FIELD;
     param.hx_field = MIN_HX_FIELD;
 
-    for (int side = MIN_SIDE; side < MAX_SIDE; side++){
+    
+
+    for (int side = MAX_SIDE; side >= MIN_SIDE; side--){
 
         int index, tot_states = pow(2, side);
 
@@ -229,6 +231,7 @@ int main(){
             }
         }
 
+        // Start simulation
         cout << "Start new side" << endl;
         auto start = chrono::steady_clock::now();
 

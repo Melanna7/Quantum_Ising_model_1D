@@ -35,11 +35,11 @@ using namespace std;
 *******************************************************************************/
 
 // Range sides
-#define MIN_SIDE 7
-#define MAX_SIDE 15
+#define MIN_SIDE 4
+#define MAX_SIDE 11
 // General settings
 #define SPARSE_FLAG 3
-#define PBC_FLAG 1
+#define PBC_FLAG 0
 #define GZ_FIELD 1.
 #define GY_FIELD 1.
 #define HZ_FIELD 0.0001
@@ -176,7 +176,9 @@ int main(){
     param.gy_field = GY_FIELD;
     param.gx_field = MIN_GX_FIELD;
 
-    for (int side = MIN_SIDE; side <= MAX_SIDE; side++){
+
+
+    for (int side = MAX_SIDE; side >= MIN_SIDE; side--){
 
         int index, tot_states = pow(2, side);
 
@@ -190,6 +192,7 @@ int main(){
             }
         }
 
+        // Start simulation
         cout << "Start new side" << endl;
         auto start = chrono::steady_clock::now();
 
