@@ -35,7 +35,7 @@ using namespace std;
 *******************************************************************************/
 
 // Range sides
-#define MIN_SIDE 4
+#define MIN_SIDE 7
 #define MAX_SIDE 15
 // General settings
 #define SPARSE_FLAG 3

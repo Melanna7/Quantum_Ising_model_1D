@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit
 
 SIDE_SEP = 1
 SIDE_MIN = 4
-SIDE_MAX = 15
+SIDE_MAX = 14
 
 sides = np.arange(SIDE_MIN, SIDE_MAX+1, SIDE_SEP, dtype='int')
 
@@ -58,8 +58,6 @@ def alpha_hx(data):
     index_nearest = min(range(len(x)), key=lambda i: abs(x[i] - 1))
     x = x[0:index_nearest]
 
-    print(index_nearest)
-
     for side in sides:
         _, _, y, _, _, _, _, _, _ = data[side]
         values_gp[side] = y[index_nearest:]
@@ -72,7 +70,7 @@ def alpha_hx(data):
         std_deviation = np.sqrt(np.diag(covariance))
         fit_db = std_deviation[1]
         # print and store
-        print(f"\nFit parameter for side {side} and {x[idx]} is: ")
+        print(f"\nFit parameter for {x[idx]} is: ")
         print(f"{fit_b} ± {fit_db}\n")
         alpha.append(fit_b)
         alp_e.append(fit_db)
@@ -223,7 +221,7 @@ def plot_mag_scaling(data):
     fig = plt.figure(title)
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
-    plt.ylabel(r'$ \langle |M^z| \rangle * side^{1/8} $')
+    plt.ylabel(r'$ \langle |M^z| \rangle * N^{\beta / \nu} $')
     plt.xlabel('$ (hx - 1) * side  $')
     # load and plot data in function of hx
     for side in sides:
@@ -245,7 +243,7 @@ def plot_chi_scaling(data):
     fig = plt.figure(title)
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
-    plt.ylabel(r'$ \chi * side^{-7/4} $')
+    plt.ylabel(r'$ \chi * side^{- \gamma / \nu} $')
     plt.xlabel('$ (hx - 1) * side  $')
     plt.xlim(-0.6, 1.5)
     plt.ylim(0.4, 2.3)

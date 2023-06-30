@@ -284,7 +284,7 @@ public:
 
         // Check that the Hamiltonian is hermitian
         complex<double> rest;
-        rest = (dense_hamilt - dense_hamilt.transpose().adjoint()).sum();
+        rest = (spars_hamilt - spars_hamilt.transpose().adjoint()).sum();
         if (rest != 0.) {
           cout << "Error occurred building the matrix: ";
           cout << "it is not hermitian!" << endl;
@@ -427,7 +427,7 @@ public:
     }
 
     void diagonalize(){
-        /* Diagonalization subroutine with Eigen and Spectra */
+        /* Diagonalization subroutine with Eigen and Lanczos */
 
         if (!spr_flag_) {
             // Complete diagonalization with Eigen -----------------------------
@@ -452,7 +452,7 @@ public:
             // Partial diagonalization with Lanczos ----------------------------
             // Lambda Lanczos calculates the smallest or largest eigenvalue and
             // the corresponding eigenvector of a symmetric (Hermitian) matrix.
-            // https://github.com/Dario-Maglio/lambda-lanczos
+            // https://github.com/Dario-Maglio/lambda-lanczos/blob/master/src/samples/sample4_use_Eigen_library.cpp
 
             // Define matrix-vector multiplication routine
             auto amul = [&](const vector<double>& in, vector<double>& out) {
