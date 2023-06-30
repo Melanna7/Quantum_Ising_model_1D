@@ -36,11 +36,11 @@ using namespace std;
 
 // Range sides
 #define MIN_SIDE 4
-#define MAX_SIDE 8
-#define SEP_SIDE 1
+#define MAX_SIDE 12
+#define SEP_SIDE 2
 // General settings
 #define SPARSE_FLAG 3
-#define PBC_FLAG 1
+#define PBC_FLAG 0
 #define GX_FIELD 1.
 #define GY_FIELD 1.
 #define HZ_FIELD 0.0001
