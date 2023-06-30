@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 SIDE_SEP = 1
 SIDE_MIN = 4
-SIDE_MAX = 11
+SIDE_MAX = 8
 
 sides = np.arange(SIDE_MIN, SIDE_MAX+1, SIDE_SEP, dtype='int')
 
@@ -51,7 +51,7 @@ def plot_energy_gs(data):
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
     plt.ylabel(r'$ E_{GS} $')
-    plt.xlabel('$ gx field $')
+    plt.xlabel('$ gz field $')
     # load and plot data in function of hx
     for side in sides:
         x, y, _, _, _, _, _, _, _ = data[side]
@@ -71,7 +71,7 @@ def plot_energy_gap1(data):
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
     plt.ylabel(r'$ E_1 - E_{GS} $')
-    plt.xlabel('$ gx field $')
+    plt.xlabel('$ gz field $')
     # load and plot data in function of hx
     for side in sides:
         x, _, y, _, _, _, _, _, _ = data[side]
@@ -91,7 +91,7 @@ def plot_energy_gap2(data):
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
     plt.ylabel(r'$ E_2 - E_{GS} $')
-    plt.xlabel('$ gx field $')
+    plt.xlabel('$ gz field $')
     # load and plot data in function of hx
     for side in sides:
         x, _, _, y, _, _, _, _, _ = data[side]
@@ -111,7 +111,7 @@ def plot_magnetization_x(data):
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
     plt.ylabel(r'$ \langle M^x \rangle $')
-    plt.xlabel('$ gx field $')
+    plt.xlabel('$ gz field $')
     # load and plot data in function of hx
     for side in sides:
         x, _, _, _, _, y, _, _ , _ = data[side]
@@ -150,8 +150,8 @@ def plot_magnetization_z(data):
     fig = plt.figure(title)
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
-    plt.ylabel(r'$ \langle |M^z| \rangle $')
-    plt.xlabel('$ gx field $')
+    plt.ylabel(r'$ \langle M^z \rangle $')
+    plt.xlabel('$ gz field $')
     # load and plot data in function of hx
     for side in sides:
         x, _, _, _, _, _, _, y, _ = data[side]
@@ -170,8 +170,8 @@ def plot_order_parameter(data):
     fig = plt.figure(title)
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
-    plt.ylabel(r'$ O $')
-    plt.xlabel('$ gx field $')
+    plt.ylabel(r'$ Order Par $')
+    plt.xlabel('$ gz field $')
     # load and plot data in function of hx
     for side in sides:
         x, _, _, _, y, _, _, _, _ = data[side]

@@ -36,17 +36,18 @@ using namespace std;
 
 // Range sides
 #define MIN_SIDE 4
-#define MAX_SIDE 11
+#define MAX_SIDE 8
+#define SEP_SIDE 1
 // General settings
 #define SPARSE_FLAG 3
-#define PBC_FLAG 0
-#define GZ_FIELD 1.
+#define PBC_FLAG 1
+#define GX_FIELD 1.
 #define GY_FIELD 1.
 #define HZ_FIELD 0.0001
-// Range of GX
-#define MIN_GX_FIELD -20.0
-#define MAX_GX_FIELD 20.0
-#define SEP_GX_FIELD 0.1
+// Range of GZ
+#define MIN_GZ_FIELD -10.0
+#define MAX_GZ_FIELD 10.0
+#define SEP_GZ_FIELD 0.05
 
 vector<vector<int>> basis;
 
@@ -129,17 +130,16 @@ void run_simulation(HamiltParameters param){
 
     file.open(directory + file_name);
     // Update transverse field and take measures
-    for(double gx = MIN_GX_FIELD; gx < MAX_GX_FIELD; gx += SEP_GX_FIELD){
+    for(double gz = MIN_GZ_FIELD; gz < MAX_GZ_FIELD; gz += SEP_GZ_FIELD){
         // Store gx field value
-        file << -gx << " ";
+        file << gz << " ";
         // Set field and diagonalize
-        param.hx_field = gx;
-        param.hz_field = HZ_FIELD;
+        param.gz_field = gz;
         HamOp.set_fields(param);
         HamOp.diagonalize();
         // Get and store GS energy and gaps
         cout << "Side " << param.num_sites;
-        cout << " - Field " << setprecision(4) << gx << endl;
+        cout << " - Field " << setprecision(4) << gz << endl;
         ener_gs = HamOp.get_eigenvalue(0);
         file << ener_gs << " ";
         cout << "Ground state energy: " << ener_gs << endl;
@@ -172,13 +172,14 @@ int main(){
     param.sparse_flag = SPARSE_FLAG;
     param.pbc_flag = PBC_FLAG;
     param.num_sites = MIN_SIDE;
-    param.gz_field = GZ_FIELD;
+    param.gx_field = GX_FIELD;
     param.gy_field = GY_FIELD;
-    param.gx_field = MIN_GX_FIELD;
+    param.gz_field = MIN_GZ_FIELD;
+    param.hz_field = HZ_FIELD;
 
 
 
-    for (int side = MAX_SIDE; side >= MIN_SIDE; side--){
+    for (int side = MAX_SIDE; side >= MIN_SIDE; side -= SEP_SIDE){
 
         int index, tot_states = pow(2, side);
 
