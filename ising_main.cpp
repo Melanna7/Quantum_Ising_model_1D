@@ -4,6 +4,8 @@
 *
 *******************************************************************************/
 
+// g++ class_lapacke.h ising_main.cpp -llapacke
+
 //--- Preprocessor directives --------------------------------------------------
 
 #include <iostream>
@@ -11,7 +13,8 @@
 #include <string>
 #include <chrono>
 
-#include "class_Eigen.h"
+// #include "class_Eigen.h"
+#include "class_lapacke.h"
 
 using namespace std;
 
@@ -34,9 +37,12 @@ using namespace std;
 *
 *******************************************************************************/
 
+#define DIM_HILBERT 2
+
 // Range sides
-#define MIN_SIDE 4
-#define MAX_SIDE 15
+#define MIN_SIDE 14
+#define MAX_SIDE 14
+#define LIMIT_SIDE 8
 // General settings
 #define SPARSE_FLAG 3
 #define PBC_FLAG 1
@@ -49,14 +55,12 @@ using namespace std;
 // For susceptibility
 #define DELTA_HZ -0.001
 
-vector<vector<int>> basis;
-
 //--- Contents -----------------------------------------------------------------
 
-vector<double> magnetization(const VectorXcd& psi) {
+vector<double> magnetization(const vector<complex<double>>& psi, const HamiltParameters& param) {
 
-    int index, tot_states = psi.size();
-    int sites = int(log2(tot_states));
+    int index, tot_states = param.num_states;
+    int sites = param.num_sites;
     double mag_z_tilde, mag_x, mag_y, mag_z;
     complex<double> val_x, val_y;
     vector<double> sigmaX(sites, 0.), sigmaY(sites, 0.), sigmaZ(sites, 0.);
@@ -67,8 +71,8 @@ vector<double> magnetization(const VectorXcd& psi) {
     for (int n = 0; n < tot_states; n++) {
         index = 0;
         for (int i = 0; i < sites; i++) {
-            if (basis[n][i] == 1) index += 1;
-            if (basis[n][i] == 0) index -= 1;
+            if (param.comp_basis[n][i] == 1) index += 1;
+            if (param.comp_basis[n][i] == 0) index -= 1;
         }
         mag_z_tilde += abs(1.0 * index) * norm(psi[n]);
     }
@@ -82,21 +86,21 @@ vector<double> magnetization(const VectorXcd& psi) {
         val_y = 0.;
         for (int n = 0; n < tot_states; n++) {
             // Compute sigmaX_i
-            if (basis[n][i] == 1) index = n - pow(2, sites - 1 - i);
-            if (basis[n][i] == 0) index = n + pow(2, sites - 1 - i);
+            if (param.comp_basis[n][i] == 1) index = n - pow(2, sites - 1 - i);
+            if (param.comp_basis[n][i] == 0) index = n + pow(2, sites - 1 - i);
             val_x += conj(psi[n]) * psi[index];
             // Compute sigmaY_i
-            if (basis[n][i] == 1) {
+            if (param.comp_basis[n][i] == 1) {
                 index = n - pow(2, sites - 1 - i);
                 val_y += conj(psi[n]) * complex(0., -1.) * psi[index];
             }
-            if (basis[n][i] == 0) {
+            if (param.comp_basis[n][i] == 0) {
                 index = n + pow(2, sites - 1 - i);
                 val_y += conj(psi[n]) * complex(0., 1.) * psi[index];
             }
             // Compute sigmaZ_i
-            if (basis[n][i] == 1) sigmaZ[i] += norm(psi[n]);
-            if (basis[n][i] == 0) sigmaZ[i] -= norm(psi[n]);
+            if (param.comp_basis[n][i] == 1) sigmaZ[i] += norm(psi[n]);
+            if (param.comp_basis[n][i] == 0) sigmaZ[i] -= norm(psi[n]);
         }
 
         if (abs(imag(val_x)) > 1.0e-10) cerr << "Non-real X magnetiz!" << endl;
@@ -123,9 +127,9 @@ vector<double> magnetization(const VectorXcd& psi) {
     return output;
 }
 
-double susceptibility(const VectorXcd& psi) {
-    int index, tot_states = psi.size();
-    int sites = int(log2(tot_states));
+double susceptibility(const vector<complex<double>>& psi, const HamiltParameters& param) {
+    int index, tot_states = param.num_states;
+    int sites = param.num_sites;
     double mag_z, chi;
     vector<double> sigmaZ(sites, 0.);
 
@@ -133,8 +137,8 @@ double susceptibility(const VectorXcd& psi) {
     for (int i = 0; i < sites; i++) {
         for (int n = 0; n < tot_states; n++) {
             // Compute sigmaZ_i
-            if (basis[n][i] == 1) sigmaZ[i] += norm(psi[n]);
-            if (basis[n][i] == 0) sigmaZ[i] -= norm(psi[n]);
+            if (param.comp_basis[n][i] == 1) sigmaZ[i] += norm(psi[n]);
+            if (param.comp_basis[n][i] == 0) sigmaZ[i] -= norm(psi[n]);
         }
     }
 
@@ -153,8 +157,10 @@ void run_simulation(HamiltParameters param){
     string directory, file_name, message;
     double ener_gs, ener_gap, chi;
     vector<double> magZXYZ;
-    VectorXcd psi_gs;
-    hamiltonian HamOp(param);
+    vector<complex<double>> psi;
+    hamilt_L HamOp(param);
+    // VectorXcd psi_gs;
+    // hamiltonian HamOp(param);
 
     // Define path data directory
     directory = "Data_Ising/";
@@ -173,7 +179,7 @@ void run_simulation(HamiltParameters param){
         HamOp.diagonalize();
         // Get and store GS energy and gaps
         cout << "Side " << param.num_sites;
-        cout << " - Field " << setprecision(4) << hx << endl;
+        cout << " - Field " << setprecision(4) << -hx << endl;
         ener_gs = HamOp.get_eigenvalue(0);
         file << ener_gs << " ";
         cout << "Ground state energy: " << ener_gs << endl;
@@ -184,8 +190,10 @@ void run_simulation(HamiltParameters param){
         file << ener_gap << " ";
         cout << "Second energy gap: " << ener_gap << endl;
         // Get and store GS magnetizations
-        psi_gs = HamOp.get_eigenvector(0);
-        magZXYZ = magnetization(psi_gs);
+        psi = HamOp.get_eigenvector(0);
+        // psi_gs = HamOp.get_eigenvector(0);
+        // for(int i = 0; i < psi_gs.size(); i++) psi[i] = psi_gs[i];
+        magZXYZ = magnetization(psi, param);
         file << magZXYZ[0] << " ";
         file << magZXYZ[1] << " ";
         file << magZXYZ[2] << " ";
@@ -194,8 +202,10 @@ void run_simulation(HamiltParameters param){
         param.hz_field = DELTA_HZ;
         HamOp.set_fields(param);
         HamOp.diagonalize();
-        psi_gs = HamOp.get_eigenvector(0);
-        chi = susceptibility(psi_gs);
+        psi = HamOp.get_eigenvector(0);
+        // psi_gs = HamOp.get_eigenvector(0);
+        // for(int i = 0; i < psi_gs.size(); i++) psi[i] = psi_gs[i];
+        chi = susceptibility(psi, param);
         file << chi << endl;
         cout << "Finished." << endl << endl;
     }
@@ -215,29 +225,26 @@ int main(){
     param.hz_field = HZ_FIELD;
     param.hx_field = MIN_HX_FIELD;
 
-    
-
     for (int side = MAX_SIDE; side >= MIN_SIDE; side--){
 
-        int index, tot_states = pow(2, side);
+        param.num_sites = side;
+        param.num_states = pow(DIM_HILBERT, side);
+        // Check maximum side for complete diagonalization
+        if(side == LIMIT_SIDE) param.sparse_flag = 0;
 
         // Store computational basis
-        basis.resize(tot_states, vector<int>(side, 0.));
-        for (int n = 0; n < tot_states; n++) {
-            index = n;
+        param.comp_basis.resize(param.num_states, vector<int>(side, 0.));
+        for(int n = 0; n < param.num_states; n++) {
+            int index = n;
             for (int i = 0; i < side; i++) {
-                basis[n][side - i - 1] = index % 2;
+                param.comp_basis[n][side - i - 1 ] = index % 2;
                 index = index / 2;
             }
         }
-
         // Start simulation
         cout << "Start new side" << endl;
         auto start = chrono::steady_clock::now();
-
-        param.num_sites = side;
         run_simulation(param);
-
         auto end = chrono::steady_clock::now();
         chrono::duration<double> elapsed_sec = end - start;
         cout << "Elapsed time: " << elapsed_sec.count() << "s" << endl << endl;

@@ -9,14 +9,14 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-#include <vector>
 #include <complex>
+#include <vector>
 
 #include <lapacke.h>
+#include <lambda_lanczos/lambda_lanczos.hpp>
 
 using namespace std;
-
-#define DIM_HILBERT 2
+using lambda_lanczos::LambdaLanczos;
 
 //--- Contents -----------------------------------------------------------------
 
@@ -24,9 +24,11 @@ using namespace std;
 #define PARAM_CLASS_H
 
 struct HamiltParameters {
-    int pbc_flag=0, num_sites=2, sparse_flag=0;
+    int pbc_flag=0, sparse_flag=0;
+    int num_sites=2, num_states=4;
     double gz_field=0., gx_field=0., gy_field=0.;
     double hz_field=0., hx_field=0., hy_field=0.;
+    vector<vector<int>> comp_basis;
 };
 
 #endif
@@ -60,13 +62,14 @@ private:
     int tot_length_, tot_states_;
     double gx_field, gy_field, gz_field;
     double hx_field, hy_field, hz_field;
+    vector<vector<int>> basis;
 
 public:
     vector<double> eigval;
-    vector<vector<int>> basis;
     vector<vector<complex<double>>> hamilt, eigvec;
 
     hamilt_L(const HamiltParameters& param):
+        tot_states_(param.num_states),
         tot_length_(param.num_sites),
         spr_flag_(param.sparse_flag),
         pbc_flag_(param.pbc_flag),
@@ -75,22 +78,9 @@ public:
         gz_field(param.gz_field),
         hx_field(param.hx_field),
         hy_field(param.hy_field),
-        hz_field(param.hz_field)
+        hz_field(param.hz_field),
+        basis(param.comp_basis)
     {// CONSTRUCTION BEGIN
-        int index = 0;
-
-        // Compute the number of states
-        tot_states_ = pow(DIM_HILBERT, tot_length_);
-
-        // Build the computational basis
-        basis.resize(tot_states_, vector<int>(tot_length_, 0.));
-        for (int n = 0; n < tot_states_; n++) {
-            index = n;
-            for (int i = 0; i < tot_length_; i++) {
-                basis[n][tot_length_ - i - 1 ] = index % 2;
-                index = index / 2;
-            }
-        }
 
         if (spr_flag_) {
             // Initialize partial eigen-stuff
@@ -100,8 +90,8 @@ public:
             // Initialize complete eigen-stuff
             eigval.resize(tot_states_);
             eigvec.resize(tot_states_, vector<complex<double>>(tot_states_, 0.));
-            hamilt.resize(tot_states_, vector<complex<double>>(tot_states_, 0.));
             // Build the Hamiltonian
+            hamilt.resize(tot_states_, vector<complex<double>>(tot_states_, 0.));
             buildHamilt();
         }
 
@@ -358,71 +348,14 @@ public:
         return psi_out;
     }
 
-    vector<complex<double>> evolution(vector<complex<double>> state_in, double t){
-        /* Hamiltonian evolution U(t) of a given input state */
-
-        vector<complex<double>> state_out(tot_states_);
-        cout << "Unitary evolution not implemented yet!" << endl << endl;
-        return state_out;
-    }
-
-    void set_fields(const HamiltParameters& param) {
-        /* Rebuild the Hamiltonian changing the value of gz_field */
-
-        gz_field = param.gz_field;
-        hz_field = param.hz_field;
-        hx_field = param.hx_field;
-        if (!spr_flag_) buildHamilt();
-        cout << "Coupling setted to: "<< endl;
-        cout << "gz -> " << setprecision(4) << param.gz_field << endl;
-        cout << "hz -> " << setprecision(4) << param.hz_field << endl;
-        cout << "hx -> " << setprecision(4) << param.hx_field << endl << endl;
-    }
-
-    vector<complex<double>> get_eigenstate(int k){
-        /* After Diagonalization returns the k-th eigenvector */
-
-        if (k >= tot_states_)
-            cerr << "Index exceeds the amount of eigenvectors." << endl;
-
-        return eigvec[k];
-    }
-
-    double get_eigenvalue(int k){
-        /* After Diagonalization returns the k-th eigenvector */
-
-        if (k >= tot_states_)
-            cerr << "Index exceeds the amount of eigenvectors." << endl;
-
-        return eigval[k];
-    }
-
-    vector<complex<double>> compute_GS(){
-        /* Diagonalize and return the ground state eigenvector */
-
-        vector<complex<double>> state(tot_states_);
-
-        diagonalize();
-
-        cout << "The ground state energy is: " << eigval[0] << endl;
-        cout << "It is associated to the eigenstate:" << endl;
-        for (int n = 0; n < tot_states_; n++) {
-            cout << fixed << setprecision(2) << eigvec[0][n] << " ";
-            state[n] = eigvec[0][n];
-        }
-        cout << endl << endl;
-
-        return state;
-    }
-
     double average_energy(const vector<complex<double>>& psi_in){
         /* Braket of the Hamiltonian on a given input state */
 
         complex<double> energy = 0.;
-        vector<complex<double>> psi_out(tot_states_, complex<double>(0.0, 0.0));
+        vector<complex<double>> psi_out(tot_states_, 0.);
 
         psi_out = action(psi_in);
-        for(int n = 0; n < tot_states_; n++){
+        for(int n = 0; n < tot_states_; n++) {
             energy += conj(psi_in[n]) * psi_out[n];
         }
 
@@ -430,7 +363,7 @@ public:
     }
 
     void diagonalize(){
-        /* Diagonalization subroutine with LAPACK */
+        /* Diagonalization subroutine with LAPACK and Lambda Lanczos */
 
         if (!spr_flag_) {
             // Complete diagonalization with LAPACKE ---------------------------
@@ -458,7 +391,7 @@ public:
             info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'V', 'L', n, matr, lda, eigenval);
             // Check for convergence
             if (info > 0) cerr << "Algorithm zheev failed to compute eigenvalues." << endl;
-            // Update eigenvalues and eigenvectors
+            // Retrieve results
             for (int i = 0; i < n; i++) {
                 eigval[i] = eigenval[i];
                 for (int j = 0; j < lda; j++) {
@@ -467,14 +400,79 @@ public:
             }
             //------------------------------------------------------------------
         } else {
-            // Partial diagonalization with ARPACKpp ---------------------------
+            // Partial diagonalization with Lanczos ----------------------------
+            // Lambda Lanczos calculates the smallest or largest eigenvalue and
+            // the corresponding eigenvector of a symmetric real matrix.
+            // https://github.com/Dario-Maglio/lambda-lanczos/blob/master/src/samples/sample4_use_Eigen_library.cpp
 
-            cout << "Sparse diagonalizations not implemented yet!" << endl;
-            cout << endl;
+            // Define matrix-vector multiplication routine
+            auto amul = [&](const vector<double>& in, vector<double>& out) {
+                vector<complex<double>> psi(in.size());
+                for(int i = 0; i < in.size(); i++) psi[i] = complex(in[i]);
+                psi = action(psi);
+                for(int i = 0; i < in.size(); i++) out[i] = psi[i].real();
+            };
+            // Construct solver object and compute
+            vector<vector<double>> eigvenctors;
+            LambdaLanczos<double> solver(amul, tot_states_, false, spr_flag_);
+            solver.run(eigval, eigvenctors);
+            // Retrieve results
+            for (int i = 0; i < spr_flag_; i++) {
+                for (int n = 0; n < tot_states_; n++)
+                    eigvec[i][n] = complex(eigvenctors[i][n]);
+            }
 
             //------------------------------------------------------------------
         }
+    }
 
+    //--- Set and Get methods --------------------------------------------------
+
+    void set_fields(const HamiltParameters& param, bool debug=0) {
+        /* Rebuild the Hamiltonian changing the field values */
+
+        // Print changes
+        if (debug) cout << "New couplings are "<< endl << setprecision(4)
+            << "gz: " << gz_field << " --> " << param.gz_field << endl
+            << "gx: " << gx_field << " --> " << param.gx_field << endl
+            << "gy: " << gy_field << " --> " << param.gy_field << endl
+            << "hz: " << hz_field << " --> " << param.hz_field << endl
+            << "hx: " << hx_field << " --> " << param.hx_field << endl
+            << "hy: " << hy_field << " --> " << param.hy_field << endl << endl;
+        // Save the new couplings
+        gx_field = param.gx_field;
+        gy_field = param.gy_field;
+        gz_field = param.gz_field;
+        hx_field = param.hx_field;
+        hy_field = param.hy_field;
+        hz_field = param.hz_field;
+        // Re-construct the Hamiltonian
+        if(!spr_flag_) buildHamilt();
+
+    }
+
+    double get_eigenvalue(int k){
+        /* After Diagonalization returns the k-th eigenvalue */
+
+        int limit = tot_states_;
+        if(spr_flag_) limit = spr_flag_;
+
+        if(k >= limit)
+            cerr << "Index exceeds the amount of eigenvectors." << endl;
+
+        return eigval[k];
+    }
+
+    vector<complex<double>> get_eigenvector(int k){
+        /* After Diagonalization returns the k-th eigenvector */
+
+        int limit = tot_states_;
+        if(spr_flag_) limit = spr_flag_;
+
+        if(k >= limit)
+            cerr << "Index exceeds the amount of eigenvectors." << endl;
+
+        return eigvec[k];
     }
 
     //--- Show methods ---------------------------------------------------------

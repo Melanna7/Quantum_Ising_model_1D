@@ -36,21 +36,37 @@ using namespace std;
 *
 *******************************************************************************/
 
+#define DIM_HILBERT 2
+
+#define SIDE 2
+#define SPARSE_FLAG 3
+#define PBC_FLAG 1
+
 //--- Main Test ----------------------------------------------------------------
 
 int main(){
     /* Test the methods of the hamiltonian Class. */
 
     HamiltParameters param;
-    param.sparse_flag = 3;
-    param.pbc_flag = 1;
-    param.num_sites = 3;
-    param.gz_field = 0.;
-    param.gy_field = 0.;
-    param.gx_field = 0.;
-    param.hz_field = 0.5;
-    param.hy_field = 1.;
-    param.hx_field = 1.;
+    param.sparse_flag = SPARSE_FLAG;
+    param.pbc_flag = PBC_FLAG;
+    param.num_sites = SIDE;
+    param.num_states = pow(DIM_HILBERT, SIDE);
+    param.gz_field = 1.;
+    param.gy_field = 1.;
+    param.gx_field = 0.5;
+    param.hz_field = 0.;
+    param.hy_field = 0.;
+    param.hx_field = 0.;
+    // Build the computational basis
+    param.comp_basis.resize(param.num_states, vector<int>(param.num_sites, 0.));
+    for (int n = 0; n < param.num_states; n++) {
+        int index = n;
+        for (int i = 0; i < param.num_sites; i++) {
+            param.comp_basis[n][param.num_sites - i - 1 ] = index % 2;
+            index = index / 2;
+        }
+    }
 
     double lambda;
     VectorXcd v, w;
@@ -59,12 +75,7 @@ int main(){
     // Test if the basis and the Hamiltonian are correct
     HamOp.show_comput_basis();
     HamOp.show_hamiltonian();
-
-    // Test set_fields
-    param.gz_field = -1.;
-    param.gx_field = 0.;
-    param.hy_field = 0.;
-    param.hz_field = -0.3;
+    param.hz_field = 1.;
     HamOp.set_fields(param, 1);
     HamOp.show_hamiltonian();
 

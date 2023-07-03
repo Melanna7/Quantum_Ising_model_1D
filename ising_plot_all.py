@@ -56,7 +56,7 @@ def alpha_hx(data):
     # load points
     x, _, _, _, _, _, _, _, _ = data[4]
     index_nearest = min(range(len(x)), key=lambda i: abs(x[i] - 1))
-    x = x[0:index_nearest]
+    x = x[index_nearest:]
 
     for side in sides:
         _, _, y, _, _, _, _, _, _ = data[side]

@@ -8,7 +8,6 @@
 
 #include <iostream>
 #include <iomanip>
-#include <cstdlib>
 #include <cmath>
 #include <complex>
 
@@ -20,13 +19,11 @@
 // include Lanczos module
 #include <lambda_lanczos/lambda_lanczos.hpp>
 
-#define DIM_HILBERT 2
-
-typedef Eigen::Triplet<std::complex<double>> Tcd;
-
 using namespace std;
 using namespace Eigen;
 using lambda_lanczos::LambdaLanczos;
+
+typedef Triplet<complex<double>> Tcd;
 
 //--- Contents -----------------------------------------------------------------
 
@@ -34,9 +31,11 @@ using lambda_lanczos::LambdaLanczos;
 #define PARAM_CLASS_H
 
 struct HamiltParameters {
-    int pbc_flag=0, num_sites=2, sparse_flag=0;
+    int pbc_flag=0, sparse_flag=0;
+    int num_sites=2, num_states=4;
     double gz_field=0., gx_field=0., gy_field=0.;
     double hz_field=0., hx_field=0., hy_field=0.;
+    vector<vector<int>> comp_basis;
 };
 
 #endif
@@ -67,18 +66,19 @@ class hamiltonian {
     *************************************************************/
 private:
     int spr_flag_, pbc_flag_;
-    int length_, tot_states_;
+    int tot_length_, tot_states_;
     double gx_field, gy_field, gz_field;
     double hx_field, hy_field, hz_field;
+    MatrixXi basis;
 
 public:
     VectorXd eigenvalues;
-    MatrixXi basis;
     MatrixXcd dense_hamilt, eigenvectors;
     SparseMatrix<complex<double>> spars_hamilt;
 
     hamiltonian(const HamiltParameters& param):
-        length_(param.num_sites),
+        tot_states_(param.num_states),
+        tot_length_(param.num_sites),
         spr_flag_(param.sparse_flag),
         pbc_flag_(param.pbc_flag),
         gx_field(param.gx_field),
@@ -89,21 +89,14 @@ public:
         hz_field(param.hz_field)
     {// CONSTRUCTION BEGIN
 
-        // Compute the number of states
-        tot_states_ = pow(DIM_HILBERT, length_);
-
         // Build the computational basis
-        int index = 0;
-        basis.resize(tot_states_, length_);
+        basis.resize(tot_states_, tot_length_);
         for (int n = 0; n < tot_states_; n++) {
-            index = n;
-            for (int i = 0; i < length_; i++) {
-                basis(n, length_ - i - 1 ) = index % 2;
-                index = index / 2;
+            for (int i = 0; i < tot_length_; i++) {
+                basis(n, i) = param.comp_basis[n][i];
             }
         }
 
-        // Build the Hamiltonian
         if (spr_flag_) {
             // Initialize partial eigen-stuff
             eigenvalues = VectorXd::Zero(spr_flag_);
@@ -128,7 +121,7 @@ public:
         vector<Tcd> tripletList;
 
         // Sigma_z [longitudinal field]
-        if (hz_field != 0.) for (int i = 0; i < length_; i++) {
+        if (hz_field != 0.) for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == 1)
                     tripletList.push_back(Tcd(n, n, -hz_field));
@@ -137,31 +130,31 @@ public:
             }
         }
         // Sigma_x [transverse field]
-        if (hx_field != 0.) for (int i = 0; i < length_; i++) {
+        if (hx_field != 0.) for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == 1)
-                    index = n - pow(2, length_ - 1 - i);
+                    index = n - pow(2, tot_length_ - 1 - i);
                 if (basis(n, i) == 0)
-                    index = n + pow(2, length_ - 1 - i);
+                    index = n + pow(2, tot_length_ - 1 - i);
                 tripletList.push_back(Tcd(index, n, hx_field));
             }
         }
         // Sigma_y [transverse field]
-        if (hy_field != 0.) for (int i = 0; i < length_; i++) {
+        if (hy_field != 0.) for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == 1) {
-                    index = n - pow(2, length_ - 1 - i);
+                    index = n - pow(2, tot_length_ - 1 - i);
                     value = - hy_field * complex(0., 1.);
                 }
                 if (basis(n, i) == 0) {
-                    index = n + pow(2, length_ - 1 - i);
+                    index = n + pow(2, tot_length_ - 1 - i);
                     value = hy_field * complex(0., 1.);
                 }
                 tripletList.push_back(Tcd(index, n, value));
             }
         }
         // Sigma_z Sigma_z [coupling]
-        if (gz_field != 0.) for (int i = 0; i < length_ - 1; i++) {
+        if (gz_field != 0.) for (int i = 0; i < tot_length_ - 1; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == basis(n, i+1))
                     tripletList.push_back(Tcd(n, n, gz_field));
@@ -172,23 +165,23 @@ public:
         // Sigma_z Sigma_z [boundary conditions]
         if (pbc_flag_ & (gz_field != 0.)) {
             for (int n = 0; n < tot_states_; n++) {
-                if (basis(n, length_ - 1) == basis(n, 0))
+                if (basis(n, tot_length_ - 1) == basis(n, 0))
                     tripletList.push_back(Tcd(n, n, gz_field));
-                if (basis(n, length_ - 1) != basis(n, 0))
+                if (basis(n, tot_length_ - 1) != basis(n, 0))
                     tripletList.push_back(Tcd(n, n, -gz_field));
             }
         }
         // Sigma_x Sigma_x [coupling]
-        if (gx_field != 0.) for (int i = 0; i < length_ - 1; i++) {
+        if (gx_field != 0.) for (int i = 0; i < tot_length_ - 1; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == 1)
-                    index = n - pow(2, length_ - 1 - i);
+                    index = n - pow(2, tot_length_ - 1 - i);
                 if (basis(n, i) == 0)
-                    index = n + pow(2, length_ - 1 - i);
+                    index = n + pow(2, tot_length_ - 1 - i);
                 if (basis(n, i+1) == 1)
-                    index -= pow(2, length_ - 2 - i);
+                    index -= pow(2, tot_length_ - 2 - i);
                 if (basis(n, i+1) == 0)
-                    index += pow(2, length_ - 2 - i);
+                    index += pow(2, tot_length_ - 2 - i);
                 tripletList.push_back(Tcd(index, n, gx_field));
             }
         }
@@ -196,27 +189,27 @@ public:
         if (pbc_flag_ & (gx_field != 0.)) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, 0) == 1)
-                    index = n - pow(2, length_ - 1);
+                    index = n - pow(2, tot_length_ - 1);
                 if (basis(n, 0) == 0)
-                    index = n + pow(2, length_ - 1);
-                if (basis(n, length_ - 1) == 1)
+                    index = n + pow(2, tot_length_ - 1);
+                if (basis(n, tot_length_ - 1) == 1)
                     index -= 1;
-                if (basis(n, length_ - 1) == 0)
+                if (basis(n, tot_length_ - 1) == 0)
                     index += 1;
                 tripletList.push_back(Tcd(index, n, gx_field));
             }
         }
         // Sigma_y Sigma_y [coupling]
-        if (gy_field != 0.) for (int i = 0; i < length_ - 1; i++) {
+        if (gy_field != 0.) for (int i = 0; i < tot_length_ - 1; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == 1)
-                    index = n - pow(2, length_ - 1 - i);
+                    index = n - pow(2, tot_length_ - 1 - i);
                 if (basis(n, i) == 0)
-                    index = n + pow(2, length_ - 1 - i);
+                    index = n + pow(2, tot_length_ - 1 - i);
                 if (basis(n, i+1) == 1)
-                    index -= pow(2, length_ - 2 - i);
+                    index -= pow(2, tot_length_ - 2 - i);
                 if (basis(n, i+1) == 0)
-                    index += pow(2, length_ - 2 - i);
+                    index += pow(2, tot_length_ - 2 - i);
 
                 if (basis(n, i) == basis(n, i+1))
                     tripletList.push_back(Tcd(index, n, -gy_field));
@@ -228,17 +221,17 @@ public:
         if (pbc_flag_ & (gy_field != 0.)) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, 0) == 1)
-                    index = n - pow(2, length_ - 1);
+                    index = n - pow(2, tot_length_ - 1);
                 if (basis(n, 0) == 0)
-                    index = n + pow(2, length_ - 1);
-                if (basis(n, length_ - 1) == 1)
+                    index = n + pow(2, tot_length_ - 1);
+                if (basis(n, tot_length_ - 1) == 1)
                     index -= 1;
-                if (basis(n, length_ - 1) == 0)
+                if (basis(n, tot_length_ - 1) == 0)
                     index += 1;
 
-                if (basis(n, length_ - 1) == basis(n, 0))
+                if (basis(n, tot_length_ - 1) == basis(n, 0))
                     tripletList.push_back(Tcd(index, n, -gy_field));
-                if (basis(n, length_ - 1) != basis(n, 0))
+                if (basis(n, tot_length_ - 1) != basis(n, 0))
                     tripletList.push_back(Tcd(index, n, gy_field));
             }
         }
@@ -302,35 +295,35 @@ public:
         VectorXcd psi_out = VectorXcd::Zero(tot_states_);
 
         // Sigma_z [longitudinal field]
-        for (int i = 0; i < length_; i++) {
+        for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == 1) psi_out[n] -= hz_field * psi_in[n];
                 if (basis(n, i) == 0) psi_out[n] += hz_field * psi_in[n];
             }
         }
         // Sigma_x [transverse field]
-        for (int i = 0; i < length_; i++) {
+        for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
-                if (basis(n, i) == 1) index = n - pow(2, length_ - 1 - i);
-                if (basis(n, i) == 0) index = n + pow(2, length_ - 1 - i);
+                if (basis(n, i) == 1) index = n - pow(2, tot_length_ - 1 - i);
+                if (basis(n, i) == 0) index = n + pow(2, tot_length_ - 1 - i);
                 psi_out[index] += hx_field * psi_in[n];
             }
         }
         // Sigma_y [transverse field]
-        for (int i = 0; i < length_; i++) {
+        for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == 1) {
-                    index = n - pow(2, length_ - 1 - i);
+                    index = n - pow(2, tot_length_ - 1 - i);
                     psi_out[index] += hy_field * complex(0., -1.) * psi_in[n];
                 }
                 if (basis(n, i) == 0) {
-                    index = n + pow(2, length_ - 1 - i);
+                    index = n + pow(2, tot_length_ - 1 - i);
                     psi_out[index] += hy_field * complex(0., 1.) * psi_in[n];
                 }
             }
         }
         // Sigma_z Sigma_z [coupling]
-        for (int i = 0; i < length_ - 1; i++) {
+        for (int i = 0; i < tot_length_ - 1; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == basis(n, i + 1))
                     psi_out[n] += gz_field * psi_in[n];
@@ -341,23 +334,23 @@ public:
         // Sigma_z Sigma_z [boundary conditions]
         if (pbc_flag_) {
             for (int n = 0; n < tot_states_; n++) {
-                if (basis(n, length_ - 1) == basis(n, 0))
+                if (basis(n, tot_length_ - 1) == basis(n, 0))
                     psi_out[n] += gz_field * psi_in[n];
-                if (basis(n, length_ - 1) != basis(n, 0))
+                if (basis(n, tot_length_ - 1) != basis(n, 0))
                     psi_out[n] -= gz_field * psi_in[n];
           }
         }
         // Sigma_x Sigma_x [coupling]
-        for (int i = 0; i < length_ - 1; i++) {
+        for (int i = 0; i < tot_length_ - 1; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == 1)
-                    index = n - pow(2, length_ - 1 - i);
+                    index = n - pow(2, tot_length_ - 1 - i);
                 if (basis(n, i) == 0)
-                    index = n + pow(2, length_ - 1 - i);
+                    index = n + pow(2, tot_length_ - 1 - i);
                 if (basis(n, i+1) == 1)
-                    index -= pow(2, length_ - 2 - i);
+                    index -= pow(2, tot_length_ - 2 - i);
                 if (basis(n, i+1) == 0)
-                    index += pow(2, length_ - 2 - i);
+                    index += pow(2, tot_length_ - 2 - i);
                 psi_out[index] += gx_field * psi_in[n];
             }
         }
@@ -365,27 +358,27 @@ public:
         if (pbc_flag_) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, 0) == 1)
-                    index = n - pow(2, length_ - 1);
+                    index = n - pow(2, tot_length_ - 1);
                 if (basis(n, 0) == 0)
-                    index = n + pow(2, length_ - 1);
-                if (basis(n, length_ - 1) == 1)
+                    index = n + pow(2, tot_length_ - 1);
+                if (basis(n, tot_length_ - 1) == 1)
                     index -= 1;
-                if (basis(n, length_ - 1) == 0)
+                if (basis(n, tot_length_ - 1) == 0)
                     index += 1;
                 psi_out[index] += gx_field * psi_in[n];
             }
         }
         // Sigma_y Sigma_y [coupling]
-        for (int i = 0; i < length_ - 1; i++) {
+        for (int i = 0; i < tot_length_ - 1; i++) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, i) == 1)
-                    index = n - pow(2, length_ - 1 - i);
+                    index = n - pow(2, tot_length_ - 1 - i);
                 if (basis(n, i) == 0)
-                    index = n + pow(2, length_ - 1 - i);
+                    index = n + pow(2, tot_length_ - 1 - i);
                 if (basis(n, i+1) == 1)
-                    index -= pow(2, length_ - 2 - i);
+                    index -= pow(2, tot_length_ - 2 - i);
                 if (basis(n, i+1) == 0)
-                    index += pow(2, length_ - 2 - i);
+                    index += pow(2, tot_length_ - 2 - i);
                 if (basis(n, i) == basis(n, i+1))
                     psi_out[index] -= gy_field * psi_in[n];
                 if (basis(n, i) != basis(n, i+1))
@@ -396,17 +389,17 @@ public:
         if (pbc_flag_) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, 0) == 1)
-                    index = n - pow(2, length_ - 1);
+                    index = n - pow(2, tot_length_ - 1);
                 if (basis(n, 0) == 0)
-                    index = n + pow(2, length_ - 1);
-                if (basis(n, length_ - 1) == 1)
+                    index = n + pow(2, tot_length_ - 1);
+                if (basis(n, tot_length_ - 1) == 1)
                     index -= 1;
-                if (basis(n, length_ - 1) == 0)
+                if (basis(n, tot_length_ - 1) == 0)
                     index += 1;
 
-                if (basis(n, length_ - 1) == basis(n, 0))
+                if (basis(n, tot_length_ - 1) == basis(n, 0))
                     psi_out[index] -= gy_field * psi_in[n];
-                if (basis(n, length_ - 1) != basis(n, 0))
+                if (basis(n, tot_length_ - 1) != basis(n, 0))
                     psi_out[index] += gy_field * psi_in[n];
             }
         }
@@ -419,10 +412,7 @@ public:
 
         complex<double> energy = 0.;
         VectorXcd psi_out = action(psi_in);
-
-        for (int n = 0; n < tot_states_; n++)
-            energy += conj(psi_in[n]) * psi_out[n];
-
+        energy = psi_in.adjoint() * psi_out;
         return energy.real();
     }
 
@@ -519,7 +509,7 @@ public:
         int limit = tot_states_;
         if (spr_flag_) limit = spr_flag_;
 
-        if (k >= tot_states_)
+        if (k >= limit)
             cerr << "Index exceeds the amount of eigenvectors." << endl;
 
         return eigenvectors.col(k);
@@ -532,7 +522,7 @@ public:
         cout << "Lattice computational basis: " << endl;
         for (int n = 0; n < tot_states_; n++) {
             cout << "|";
-            for (int i = 0; i < length_; i++) cout << basis(n, i);
+            for (int i = 0; i < tot_length_; i++) cout << basis(n, i);
             cout << ">  ";
         }
         cout << endl << endl;
