@@ -25,8 +25,12 @@ sides = np.arange(SIDE_MIN, SIDE_MAX+1, SIDE_SEP, dtype='int')
 
 #--- Contents ------------------------------------------------------------------
 
-def fit_fun(x, a, b, c):
-    y = c + a * np.exp(- x / b)
+def fit_pow(x, a, b):
+    y = b * np.power(x, - a)
+    return y
+
+def fit_exp(x, a, b):
+    y = b * np.exp(- a * x)
     return y
 
 def load_data():
@@ -44,52 +48,6 @@ def load_data():
 
     return data
 
-#--- Fit procedure -------------------------------------------------------------
-
-def alpha_hx(data):
-    """ Fit and plot alpha(hx) behaviour"""
-
-    alpha = []
-    alp_e = []
-    values_gp = {}
-
-    # load points
-    x, _, _, _, _, _, _, _, _ = data[4]
-    index_nearest = min(range(len(x)), key=lambda i: abs(x[i] - 1))
-    x = x[index_nearest:]
-
-    for side in sides:
-        _, _, y, _, _, _, _, _, _ = data[side]
-        values_gp[side] = y[index_nearest:]
-
-    # fit alpha
-    for idx in range(index_nearest):
-        y = [values_gp[side][idx] for side in sides]
-        parameters, covariance = curve_fit(fit_fun, sides, y)
-        fit_b = parameters[1]
-        std_deviation = np.sqrt(np.diag(covariance))
-        fit_db = std_deviation[1]
-        # print and store
-        print(f"\nFit parameter for {x[idx]} is: ")
-        print(f"{fit_b} ± {fit_db}\n")
-        alpha.append(fit_b)
-        alp_e.append(fit_db)
-
-    # plot alpha
-    title = f"Behaviour of alpha(hx)"
-    print("\nPlot " + title + "\n")
-    # axis and style
-    fig = plt.figure(title)
-    plt.style.use('seaborn-whitegrid')
-    plt.title(title)
-    plt.ylabel(r'$ \alpha $')
-    plt.xlabel('$ hx $')
-    # points and function
-    plt.errorbar(x, alpha, yerr=alp_e, fmt='.')
-    # save and show
-    plt.savefig(os.path.join("Plots_and_fit", title + ".png"))
-    plt.show()
-
 #--- Plot procedures -----------------------------------------------------------
 
 def plot_energy_gs(data):
@@ -102,7 +60,7 @@ def plot_energy_gs(data):
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
     plt.ylabel(r'$ E_{GS} $')
-    plt.xlabel('$ hx field $')
+    plt.xlabel('transverse field')
     # load and plot data in function of hx
     for side in sides:
         x, y, _, _, _, _, _, _, _ = data[side]
@@ -122,7 +80,7 @@ def plot_energy_gap1(data):
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
     plt.ylabel(r'$ E_1 - E_{GS} $')
-    plt.xlabel('$ hx field $')
+    plt.xlabel('transverse field')
     # load and plot data in function of hx
     for side in sides:
         x, _, y, _, _, _, _, _, _ = data[side]
@@ -142,7 +100,7 @@ def plot_energy_gap2(data):
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
     plt.ylabel(r'$ E_2 - E_{GS} $')
-    plt.xlabel('$ hx field $')
+    plt.xlabel('transverse field')
     # load and plot data in function of hx
     for side in sides:
         x, _, _, y, _, _, _, _, _ = data[side]
@@ -151,6 +109,61 @@ def plot_energy_gap2(data):
     plt.legend(loc='lower right')
     plt.savefig(os.path.join("Plots_and_fit", title + ".png"))
     plt.show()
+
+#--- Fit procedure -------------------------------------------------------------
+
+def alpha_hx(data):
+    """ Fit and plot alpha(hx) behaviour"""
+
+    alpha = []
+    alp_e = []
+    values_gp = {}
+
+    # load points (they are stored in reverse order from 2.0 to 0.)
+    x, _, _, _, _, _, _, _, _ = data[4]
+    index_nearest = min(range(len(x)), key=lambda i: abs(x[i] - 1))
+    print(f"Nearest index to 1 is {index_nearest} with hx = {x[index_nearest]}")
+
+    x = x[index_nearest:]
+    for side in sides:
+        _, _, y, _, _, _, _, _, _ = data[side]
+        values_gp[side] = y[index_nearest:]
+
+    # fit alpha
+    for idx in range(len(x)):
+        y = [values_gp[side][idx] for side in sides]
+        if(idx == 0):
+            fit_fun = fit_pow
+        else:
+            fit_fun = fit_exp
+        parameters, covariance = curve_fit(fit_fun, sides, y)
+        fit_a = parameters[0]
+        std_deviation = np.sqrt(np.diag(covariance))
+        fit_da = std_deviation[0]
+        # print and store
+        print(f"\nFit parameter for {x[idx]} is: ")
+        print(f"{fit_a} ± {fit_da}\n")
+        if (idx > 0) :
+            alpha.append(fit_a)
+            alp_e.append(fit_da)
+    x = x[1:]
+
+    # plot alpha
+    title = f"Behaviour of alpha(hx)"
+    print("\nPlot " + title + "\n")
+    # axis and style
+    fig = plt.figure(title)
+    plt.style.use('seaborn-whitegrid')
+    plt.title(title)
+    plt.ylabel(r'$ \alpha $')
+    plt.xlabel('transverse field')
+    # points and function
+    plt.errorbar(x, alpha, yerr=alp_e, fmt='.')
+    # save and show
+    plt.savefig(os.path.join("Plots_and_fit", title + ".png"))
+    plt.show()
+
+#--- Magn procedures -----------------------------------------------------------
 
 def plot_magnetization_z(data):
     """ Plot magnetization """
@@ -161,8 +174,8 @@ def plot_magnetization_z(data):
     fig = plt.figure(title)
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
-    plt.ylabel(r'$ \langle |M^z| \rangle $')
-    plt.xlabel('$ hx field $')
+    plt.ylabel(r'order parameter $ M^z $')
+    plt.xlabel('transverse field')
     # load and plot data in function of hx
     for side in sides:
         x, _, _, _, y, _, _, _, _ = data[side]
@@ -182,7 +195,7 @@ def plot_magnetization_x(data):
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
     plt.ylabel(r'$ \langle M^x \rangle $')
-    plt.xlabel('$ hx field $')
+    plt.xlabel('transverse field')
     # load and plot data in function of hx
     for side in sides:
         x, _, _, _, _, y, _, _ , _ = data[side]
@@ -202,7 +215,7 @@ def plot_magnetization_y(data):
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
     plt.ylabel(r'$ \langle M^y \rangle $')
-    plt.xlabel('$ hx field $')
+    plt.xlabel('transverse field')
     # load and plot data in function of hx
     for side in sides:
         x, _, _, _, _, _, y, _ , _ = data[side]
@@ -264,15 +277,15 @@ if __name__ == '__main__':
 
     data = load_data()
 
-    plot_magnetization_z(data)
-    plot_magnetization_x(data)
-    plot_magnetization_y(data)
-
     plot_energy_gs(data)
     plot_energy_gap1(data)
     plot_energy_gap2(data)
 
+    alpha_hx(data)
+
+    plot_magnetization_z(data)
+    plot_magnetization_x(data)
+    plot_magnetization_y(data)
+
     plot_mag_scaling(data)
     plot_chi_scaling(data)
-
-    alpha_hx(data)
