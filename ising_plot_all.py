@@ -21,6 +21,8 @@ SIDE_SEP = 1
 SIDE_MIN = 4
 SIDE_MAX = 14
 
+plt.style.use('ggplot')
+
 sides = np.arange(SIDE_MIN, SIDE_MAX+1, SIDE_SEP, dtype='int')
 
 #--- Contents ------------------------------------------------------------------
@@ -73,7 +75,7 @@ def plot_energy_gs(data):
 def plot_energy_gap1(data):
     """ Plot first energy gap """
 
-    title = "Plot first energy gap"
+    title = "Plot energy first gap"
     print(title + "\n")
     # axis and style
     fig = plt.figure(title)
@@ -93,7 +95,7 @@ def plot_energy_gap1(data):
 def plot_energy_gap2(data):
     """ Plot second energy gap """
 
-    title = "Plot second energy gap"
+    title = "Plot energy second gap"
     print(title + "\n")
     # axis and style
     fig = plt.figure(title)
@@ -120,7 +122,7 @@ def alpha_hx(data):
     values_gp = {}
 
     # load points (they are stored in reverse order from 2.0 to 0.)
-    x, _, _, _, _, _, _, _, _ = data[4]
+    x, _, _, _, _, _, _, _, _ = data[10]
     index_nearest = min(range(len(x)), key=lambda i: abs(x[i] - 1))
     print(f"Nearest index to 1 is {index_nearest} with hx = {x[index_nearest]}")
 

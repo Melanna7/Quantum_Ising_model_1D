@@ -40,7 +40,7 @@ using namespace std;
 #define DIM_HILBERT 2
 
 // Range sides
-#define MIN_SIDE 14
+#define MIN_SIDE 4
 #define MAX_SIDE 14
 #define LIMIT_SIDE 8
 // General settings
@@ -154,7 +154,7 @@ void run_simulation(HamiltParameters param){
     /* Simulation for a given side */
 
     ofstream file;
-    string directory, file_name, message;
+    string directory, file_name;
     double ener_gs, ener_gap, chi;
     vector<double> magZXYZ;
     vector<complex<double>> psi;
