@@ -488,7 +488,8 @@ public:
         hz_field = param.hz_field;
         // Re-construct the Hamiltonian
         (spr_flag_)? buildSparse() : buildHamilt();
-
+        // Può essere migliorato non facendo azzerare l'H e sommando
+        // la differenza tra i parametri finali e quelli iniziali
     }
 
     double get_eigenvalue(int k){
