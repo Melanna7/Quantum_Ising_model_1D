@@ -4,7 +4,7 @@
 *
 *******************************************************************************/
 
-// g++ class_Eigen.h level_spacing.cpp -o levels.out 12550.2s = 3.5 h
+// g++ class_Eigen.h level_spacing.cpp -I ./include/ -o levels.out 12550.2s = 3.5 h
 
 //--- Preprocessor directives --------------------------------------------------
 

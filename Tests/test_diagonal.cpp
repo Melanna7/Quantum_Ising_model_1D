@@ -4,7 +4,7 @@
 *
 *******************************************************************************/
 
-// g++ ../class_Eigen.h ../class_lapacke.h test_diagonal.cpp -llapacke -o e_differences.out
+// g++ ../class_Eigen.h ../class_lapacke.h test_diagonal.cpp -llapacke -I ../include/ -o e_differences.out
 
 //--- Preprocessor directives --------------------------------------------------
 

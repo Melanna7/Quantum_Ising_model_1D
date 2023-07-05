@@ -4,7 +4,7 @@
 *
 *******************************************************************************/
 
-// g++ ../class_lapacke.h test_lapacke.cpp -llapacke -o e_lapacke.out
+// g++ ../class_lapacke.h test_lapacke.cpp -llapacke -I ../include/ -o e_lapacke.out
 
 //--- Preprocessor directives --------------------------------------------------
 
