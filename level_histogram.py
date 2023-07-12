@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 binwidth = 0.1
 border = 1
-hz_field = 0.7
+hz_field = 1.
 
 #--- Contents ------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
     fig, (ax0, ax1) = plt.subplots(nrows=2, figsize=(8,12))
 
-    ax0.set_title(r'Integrable system | $P(s) \sim s^\gamma e^{-s^2}$')
+    ax0.set_title(r'Integrable system | $P(s) \sim e^{-s}$')
     ax0.hist(data[0], n_bins, ls='dashed', alpha = 0.5, lw=3)
 
     ax1.set_title(r'Non integrable one | $P(s) \sim s^\gamma e^{-s^2}$')

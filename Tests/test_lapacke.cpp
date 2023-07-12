@@ -4,7 +4,7 @@
 *
 *******************************************************************************/
 
-// g++ ../class_lapacke.h test_lapacke.cpp -llapacke -I ../include/ -o e_lapacke.out
+// g++ test_lapacke.cpp -llapacke -I ../include/ -o lapacke.out
 
 //--- Preprocessor directives --------------------------------------------------
 
@@ -12,7 +12,7 @@
 #include <chrono>
 
 // Import the Class hamilt_L
-#include "../class_lapacke.h"
+#include "class_lapacke.h"
 
 using namespace std;
 

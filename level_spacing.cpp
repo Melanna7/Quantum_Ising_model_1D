@@ -4,7 +4,7 @@
 *
 *******************************************************************************/
 
-// g++ class_Eigen.h level_spacing.cpp -I ./include/ -o levels.out 12550.2s = 3.5 h
+// g++ level_spacing.cpp -I ./include/ -o levels.out
 
 //--- Preprocessor directives --------------------------------------------------
 
@@ -29,7 +29,7 @@ using namespace std;
 *******************************************************************************/
 
 #define DIM_HILBERT 2
-#define SIDE 12
+#define SIDE 10
 
 //--- Main Test ----------------------------------------------------------------
 
@@ -62,7 +62,7 @@ int main(){
 
     hamiltonian HamOp(param);
 
-    // Testing and timing the diagonalization process
+    // Timing the diagonalization process
     cout << "Start diagonalization..." << endl;
     auto start = chrono::steady_clock::now();
     HamOp.diagonalize();

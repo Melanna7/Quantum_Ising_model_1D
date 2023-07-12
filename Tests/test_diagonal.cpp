@@ -4,7 +4,7 @@
 *
 *******************************************************************************/
 
-// g++ ../class_Eigen.h ../class_lapacke.h test_diagonal.cpp -llapacke -I ../include/ -o e_differences.out
+// g++ test_diagonal.cpp -llapacke -I ../include/ -o differences.out
 
 //--- Preprocessor directives --------------------------------------------------
 
@@ -12,15 +12,15 @@
 #include <chrono>
 
 // Import the Class hamiltonian
-#include "../class_Eigen.h"
+#include "class_Eigen.h"
 // Import the Class hamilt_L
-#include "../class_lapacke.h"
+#include "class_lapacke.h"
 
 using namespace std;
 
 #define DIM_HILBERT 2
 #define SIDE 8
-#define GET_VECTORS 0
+#define SHOW_VECTORS 0
 
 //--- Main Test ----------------------------------------------------------------
 
@@ -94,7 +94,7 @@ int main(){
              << Ham_ED.get_eigenvalue(i) << " | "
              << Ham_ES.get_eigenvalue(i) << endl;
 
-        if(GET_VECTORS){
+        if(SHOW_VECTORS){
             state = Ham_LD.get_eigenvector(i);
             cout << "lapck = ";
             for (auto val : state) cout << val.real() << " ";

@@ -4,7 +4,7 @@
 *
 *******************************************************************************/
 
-// g++ class_lapacke.h ising_main.cpp -llapacke -I ./include/
+// g++ ising_main.cpp -llapacke -I ./include/
 
 //--- Preprocessor directives --------------------------------------------------
 

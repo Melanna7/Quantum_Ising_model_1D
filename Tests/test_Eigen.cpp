@@ -4,7 +4,7 @@
 *
 *******************************************************************************/
 
-// g++ ../class_Eigen.h test_Eigen.cpp -I ../include/ -o e_eigen.out
+// g++ test_Eigen.cpp -I ../include/ -o eigen.out
 
 //--- Preprocessor directives --------------------------------------------------
 
@@ -13,7 +13,7 @@
 #include <cmath>
 
 // Import the Class hamiltonian
-#include "../class_Eigen.h"
+#include "class_Eigen.h"
 
 using namespace std;
 
