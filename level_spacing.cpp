@@ -29,7 +29,7 @@ using namespace std;
 *******************************************************************************/
 
 #define DIM_HILBERT 2
-#define SIDE 10
+#define SIDE 12
 
 //--- Main Test ----------------------------------------------------------------
 
@@ -81,6 +81,7 @@ int main(){
         file << HamOp.get_eigenvalue(i) << endl;
     }
     file.close();
-    cout << "The work is done." << endl << endl;
 
+    cout << "The work is done." << endl << endl;
+    return 0;
 }

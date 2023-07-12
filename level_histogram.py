@@ -9,12 +9,11 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-binwidth = 0.1
-border = 1
-hz_field = 1.
+binwidth = 0.025
+border = 50
+hz_field = -1.
 
 #--- Contents ------------------------------------------------------------------
-
 
 def load_data():
     """ Load data produced by full diagonalization """

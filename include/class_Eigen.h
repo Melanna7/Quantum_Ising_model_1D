@@ -43,6 +43,8 @@ struct HamiltParameters {
 #ifndef HAMILT_CLASS_H
 #define HAMILT_CLASS_H
 
+#define SYMM_FLAG 1
+
 class hamiltonian {
     /* Hamiltonian operator class */
     /* Class constructor ******************************************
@@ -120,6 +122,15 @@ public:
         complex<double> value;
         vector<Tcd> tripletList;
 
+        // Sigma_z traslational symmetry breaking
+        if (SYMM_FLAG != 0.){
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis(n, 0) == 1)
+                    tripletList.push_back(Tcd(n, n, -0.01));
+                if (basis(n, 0) == 0)
+                    tripletList.push_back(Tcd(n, n, 0.01));
+            }
+        }
         // Sigma_z [longitudinal field]
         if (hz_field != 0.) for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
@@ -254,10 +265,10 @@ public:
         complex<double> rest;
         rest = (dense_hamilt - dense_hamilt.transpose().adjoint()).sum();
         if (rest != 0.) {
-          cout << "Error occurred building the matrix: ";
-          cout << "it is not hermitian!" << endl;
-          show_hamiltonian();
-          exit(1);
+            cout << "Error occurred building the matrix: ";
+            cout << "it is not hermitian!" << endl;
+            show_hamiltonian();
+            exit(1);
         }
 
         cout << "Building complete!" << endl;
@@ -279,10 +290,10 @@ public:
         complex<double> rest;
         rest = (spars_hamilt - spars_hamilt.transpose().adjoint()).sum();
         if (rest != 0.) {
-          cout << "Error occurred building the matrix: ";
-          cout << "it is not hermitian!" << endl;
-          show_hamiltonian();
-          exit(1);
+            cout << "Error occurred building the matrix: ";
+            cout << "it is not hermitian!" << endl;
+            show_hamiltonian();
+            exit(1);
         }
 
         cout << "Building sparse complete!" << endl;
@@ -294,6 +305,13 @@ public:
         int index;
         VectorXcd psi_out = VectorXcd::Zero(tot_states_);
 
+        // Sigma_z traslational symmetry breaking
+        if (SYMM_FLAG != 0.){
+            for (int n = 0; n < tot_states_; n++) {
+              if (basis(n, 0) == 1) psi_out[n] -= 0.01 * psi_in[n];
+              if (basis(n, 0) == 0) psi_out[n] += 0.01 * psi_in[n];
+            }
+        }
         // Sigma_z [longitudinal field]
         for (int i = 0; i < tot_length_; i++) {
             for (int n = 0; n < tot_states_; n++) {
