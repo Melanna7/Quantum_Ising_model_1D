@@ -126,9 +126,9 @@ public:
         if (SYMM_FLAG != 0.){
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, 0) == 1)
-                    tripletList.push_back(Tcd(n, n, -0.01));
+                    tripletList.push_back(Tcd(n, n, -0.0001));
                 if (basis(n, 0) == 0)
-                    tripletList.push_back(Tcd(n, n, 0.01));
+                    tripletList.push_back(Tcd(n, n, 0.0001));
             }
         }
         // Sigma_z [longitudinal field]
@@ -308,8 +308,8 @@ public:
         // Sigma_z traslational symmetry breaking
         if (SYMM_FLAG != 0.){
             for (int n = 0; n < tot_states_; n++) {
-              if (basis(n, 0) == 1) psi_out[n] -= 0.01 * psi_in[n];
-              if (basis(n, 0) == 0) psi_out[n] += 0.01 * psi_in[n];
+              if (basis(n, 0) == 1) psi_out[n] -= 0.0001 * psi_in[n];
+              if (basis(n, 0) == 0) psi_out[n] += 0.0001 * psi_in[n];
             }
         }
         // Sigma_z [longitudinal field]

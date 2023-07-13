@@ -9,9 +9,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-binwidth = 0.025
-border = 50
-hz_field = -1.
+binwidth = 0.05
+border = 100
+hz_field = 1.
+side = 12
 
 #--- Contents ------------------------------------------------------------------
 
@@ -20,7 +21,7 @@ def load_data():
 
     data = {}
     # define data file path
-    filename = f"levels_hz_{0:.6f}.dat"
+    filename = f"levels_{side}_hz_{0:.6f}.dat"
     file_path = os.path.join("Data_Ising", filename)
     print("Loading " + file_path)
     # load data from each file
@@ -33,7 +34,7 @@ def load_data():
     data[0] = data[0] / norm
 
     # define data file path
-    filename = f"levels_hz_{hz_field:.6f}.dat"
+    filename = f"levels_{side}_hz_{hz_field:.6f}.dat"
     file_path = os.path.join("Data_Ising", filename)
     print("Loading " + file_path)
     # load data from each file
@@ -63,5 +64,5 @@ if __name__ == '__main__':
     ax1.set_title(r'Non integrable one | $P(s) \sim s^\gamma e^{-s^2}$')
     ax1.hist(data[1], n_bins, ls='dashed', alpha = 0.5, lw=3)
 
-    plt.savefig(os.path.join("Plots_and_fit", "Level spacing stat.png"))
+    plt.savefig(os.path.join("Plots_and_fit", f"Level spacing stat {side}.png"))
     plt.show()

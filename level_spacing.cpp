@@ -29,7 +29,8 @@ using namespace std;
 *******************************************************************************/
 
 #define DIM_HILBERT 2
-#define SIDE 12
+#define SIDE 11
+#define HZ 0.
 
 //--- Main Test ----------------------------------------------------------------
 
@@ -47,7 +48,7 @@ int main(){
     param.gz_field = -1.;
     param.gy_field = 0.;
     param.gx_field = 0.;
-    param.hz_field = 0.;
+    param.hz_field = HZ;
     param.hy_field = 0.;
     param.hx_field = -1.;
     // Build the computational basis
@@ -74,7 +75,7 @@ int main(){
     // Define path data directory
     directory = "Data_Ising/";
     // Define name file last configuration of the lattice
-    file_name = "levels_hz_" + to_string(param.hz_field) + ".dat";
+    file_name = "levels_" + to_string(SIDE) + "_hz_" + to_string(HZ) + ".dat";
     // Open file and save eigenvalues
     file.open(directory + file_name);
     for(int i = 0; i < param.num_states; i++){
