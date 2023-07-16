@@ -236,8 +236,8 @@ def plot_mag_scaling(data):
     fig = plt.figure(title)
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
-    plt.ylabel(r'$ \langle |M^z| \rangle * N^{\beta / \nu} $')
-    plt.xlabel('$ (hx - 1) * side  $')
+    plt.ylabel(r'$ M^z * N^{\beta / \nu} $')
+    plt.xlabel(r'$ (hx - 1) * N^{1/\nu}  $')
     # load and plot data in function of hx
     for side in sides:
         x, _, _, _, y, _, _, _, _ = data[side]
@@ -258,8 +258,8 @@ def plot_chi_scaling(data):
     fig = plt.figure(title)
     plt.style.use('seaborn-whitegrid')
     plt.title(title)
-    plt.ylabel(r'$ \chi * side^{- \gamma / \nu} $')
-    plt.xlabel('$ (hx - 1) * side  $')
+    plt.ylabel(r'$ \chi^z * N^{- \gamma / \nu} $')
+    plt.xlabel(r'$ (hx - 1) * N^{1/\nu}  $')
     plt.xlim(-0.6, 1.5)
     plt.ylim(0.4, 2.3)
     # load and plot data in function of hx

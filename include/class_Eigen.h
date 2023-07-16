@@ -43,7 +43,9 @@ struct HamiltParameters {
 #ifndef HAMILT_CLASS_H
 #define HAMILT_CLASS_H
 
-#define SYMM_FLAG 1
+#define NOISE_FLAG 0
+#define OPEN_FLAG 0
+#define EPS 0.001
 
 class hamiltonian {
     /* Hamiltonian operator class */
@@ -122,13 +124,23 @@ public:
         complex<double> value;
         vector<Tcd> tripletList;
 
-        // Sigma_z traslational symmetry breaking
-        if (SYMM_FLAG != 0.){
+        // Sigma_z random field
+        if (OPEN_FLAG) {
             for (int n = 0; n < tot_states_; n++) {
                 if (basis(n, 0) == 1)
-                    tripletList.push_back(Tcd(n, n, -0.0001));
+                    tripletList.push_back(Tcd(n, n, -EPS));
                 if (basis(n, 0) == 0)
-                    tripletList.push_back(Tcd(n, n, 0.0001));
+                    tripletList.push_back(Tcd(n, n, EPS));
+            }
+        }
+        // Sigma_z random field
+        if (NOISE_FLAG) for (int i = 0; i < tot_length_; i++) {
+            double x = (((double)rand()/(double)RAND_MAX) - 0.5) * 2 * EPS;
+            for (int n = 0; n < tot_states_; n++) {
+                if (basis(n, i) == 1)
+                    tripletList.push_back(Tcd(n, n, -x));
+                if (basis(n, i) == 0)
+                    tripletList.push_back(Tcd(n, n, x));
             }
         }
         // Sigma_z [longitudinal field]
@@ -306,10 +318,10 @@ public:
         VectorXcd psi_out = VectorXcd::Zero(tot_states_);
 
         // Sigma_z traslational symmetry breaking
-        if (SYMM_FLAG != 0.){
+        if (NOISE_FLAG != 0.){
             for (int n = 0; n < tot_states_; n++) {
-              if (basis(n, 0) == 1) psi_out[n] -= 0.0001 * psi_in[n];
-              if (basis(n, 0) == 0) psi_out[n] += 0.0001 * psi_in[n];
+              if (basis(n, 0) == 1) psi_out[n] -= EPS * psi_in[n];
+              if (basis(n, 0) == 0) psi_out[n] += EPS * psi_in[n];
             }
         }
         // Sigma_z [longitudinal field]
