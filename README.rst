@@ -56,6 +56,7 @@ Here are some of the plots generated from the analysis:
 
   .. image:: https://github.com/Dario-Maglio/Quantum_Ising_model_1D/blob/72e64ca7b57afae36b26f4916c3475c2212a476a/Plots_and_fit/Level%20spacing%20stat%2010.png
      :align: center
+     :width: 80%
 
 
 Feel free to explore the repository and use the provided programs for further analysis and investigation.
