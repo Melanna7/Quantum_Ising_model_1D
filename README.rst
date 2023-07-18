@@ -27,15 +27,15 @@ The structure of the repository is as follows:
 
 - ``Heisenberg``:
 
-  This folder contains materials that may be used to simulate the Heisenberg model properties in the next future.
+  This folder contains materials that may be used to simulate the Heisenberg model properties.
+
+- ``Plots_and_fit``:
+
+  All produced plots are stored in this folder. Here we can find the plots of the energy gaps and the istograms of the level spacing statistics. 
 
 - ``Tests``:
 
   This directory contains easy-to-use examples for testing the classes and verifying that different diagonalization methods return the same results.
-
-- ``Plots_and_fit``:
-
-  All produced plots are stored in this folder.
 
 Analysis Results
 ================
