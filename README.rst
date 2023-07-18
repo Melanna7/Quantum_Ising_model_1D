@@ -31,7 +31,7 @@ The structure of the repository is as follows:
 
 - ``Plots_and_fit``:
 
-  All produced plots are stored in this folder. Here we can find the plots of the energy gaps and the istograms of the level spacing statistics. 
+  All produced plots are stored in this folder. Here we can find the plots of the energy gaps and the histograms of the level spacing statistics. 
 
 - ``Tests``:
 
